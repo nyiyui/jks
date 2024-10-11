@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -12,7 +13,7 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
-func NewBinding[T RowData](db *sqlx.DB) (binding.DataList, error) {
+func NewBinding[T RowData](db *sqlx.DB) (*Rows[T], error) {
 	c, err := db.Conn(context.Background())
 	if err != nil {
 		return nil, err
@@ -42,10 +43,12 @@ type RowData interface {
 }
 
 type Rows[T RowData] struct {
-	db        *sqlx.DB
-	tableName string
-	listeners sync.Map
-	rowCount  int
+	db            *sqlx.DB
+	tableName     string
+	listeners     sync.Map
+	rowCount      int
+	searchQuery   string
+	searchBinding binding.String
 }
 
 func (r *Rows[T]) AddListener(dl binding.DataListener) {
@@ -57,10 +60,34 @@ func (r *Rows[T]) RemoveListener(dl binding.DataListener) {
 	r.listeners.Delete(dl)
 }
 
-func (b *Rows[T]) getData(rowid int) (T, error) {
-	row := b.db.QueryRowx(`SELECT * FROM tasks WHERE id = ?`, rowid)
+func (r *Rows[T]) BindSearchQuery(data binding.String) {
+	data.AddListener(&callbackListener{r.searchCallback})
+	r.searchBinding = data
+}
+
+func (r *Rows[T]) searchCallback() {
+	query, err := r.searchBinding.Get()
+	if err != nil {
+		log.Printf("searchCallback: getting string failed: %s", err)
+		return
+	}
+	r.searchQuery = query
+	err = r.getLength()
+	if err != nil {
+		log.Printf("searchCallback: getting new length failed", err)
+	}
+	r.reloadAll()
+}
+
+func (r *Rows[T]) getData(rowid int) (T, error) {
+	var row *sqlx.Row
+	if r.searchQuery == "" {
+		row = r.db.QueryRowx(`SELECT * FROM tasks WHERE id = ?`, rowid)
+	} else {
+		row = r.db.QueryRowx(`SELECT * FROM tasks WHERE quick_title like ? AND id = ?`, r.searchQuery, rowid)
+	}
 	var data T
-	err := row.Scan(data)
+	err := row.StructScan(&data)
 	if err != nil {
 		var zero T
 		return zero, err
@@ -68,15 +95,22 @@ func (b *Rows[T]) getData(rowid int) (T, error) {
 	return data, nil
 }
 
-func (b *Rows[T]) GetItem(index int) (binding.DataItem, error) {
-	tasks := make([]T, 1)
-	err := b.db.Select(&tasks, `SELECT * FROM tasks ORDER BY id ASC LIMIT 1 OFFSET ?`, index)
+func (r *Rows[T]) GetItem(index int) (binding.DataItem, error) {
+	var data T
+	var row *sqlx.Row
+	if r.searchQuery == "" {
+		row = r.db.QueryRowx(`SELECT * FROM tasks ORDER BY id ASC LIMIT 1 OFFSET ?`, index)
+		log.Print("select without query")
+	} else {
+		row = r.db.QueryRowx(`SELECT * FROM tasks WHERE quick_title like ? ORDER BY id ASC LIMIT 1 OFFSET ?`, r.searchQuery, index)
+		log.Print("select with query")
+	}
+	err := row.StructScan(&data)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("GetItem(%d) with rowid %d", index, tasks[0].GetID())
 	return &Row[T]{
-		r: b, rowid: int(tasks[0].GetID()), data: tasks[0],
+		r: r, rowid: int(data.GetID()), data: data,
 	}, nil
 }
 
@@ -86,7 +120,12 @@ func (r *Rows[T]) Length() int {
 
 func (r *Rows[T]) getLength() error {
 	var count int
-	rows := r.db.QueryRow(`SELECT COUNT(*) FROM tasks`)
+	var rows *sql.Row
+	if r.searchQuery == "" {
+		rows = r.db.QueryRow(`SELECT COUNT(*) FROM tasks`)
+	} else {
+		rows = r.db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE quick_title like ?`, r.searchQuery)
+	}
 	err := rows.Scan(&count)
 	if err != nil {
 		return err
@@ -96,14 +135,21 @@ func (r *Rows[T]) getLength() error {
 	return nil
 }
 
-func (b *Rows[T]) callback(op int, dbName, tableName string, rowid int64) {
-	if tableName != b.tableName {
+func (r *Rows[T]) callback(op int, dbName, tableName string, rowid int64) {
+	if tableName != r.tableName {
 		return
 	}
-	b.listeners.Range(func(key, value any) bool {
+	r.listeners.Range(func(key, value any) bool {
 		if value == nil || value.(int64) == rowid {
 			key.(binding.DataListener).DataChanged()
 		}
+		return true
+	})
+}
+
+func (r *Rows[T]) reloadAll() {
+	r.listeners.Range(func(key, value any) bool {
+		key.(binding.DataListener).DataChanged()
 		return true
 	})
 }
@@ -128,7 +174,8 @@ type Row[T RowData] struct {
 func (r *Row[T]) callback() {
 	newData, err := r.r.getData(r.rowid)
 	if err != nil {
-		log.Printf("failed to get data: %s", err)
+		// assume this is a synchronization issue
+		// log.Printf("failed to get data: %s", err)
 		var zero T
 		r.data = zero
 		return

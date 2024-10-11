@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"nyiyui.ca/jks/data"
@@ -44,6 +45,11 @@ func main() {
 			label.Bind(row)
 		},
 	)
-	w.SetContent(tasksList)
+	searchQuery := binding.NewString()
+	search := widget.NewEntry()
+	search.Bind(searchQuery)
+	tasksBinding.BindSearchQuery(searchQuery)
+	w.SetContent(container.NewBorder(search, nil, nil, nil, tasksList))
+	w.Canvas().Focus(search)
 	w.ShowAndRun()
 }
