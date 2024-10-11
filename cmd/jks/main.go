@@ -46,10 +46,26 @@ func main() {
 		},
 	)
 	searchQuery := binding.NewString()
+	selectedRowid := binding.NewInt()
 	search := widget.NewEntry()
 	search.Bind(searchQuery)
 	tasksBinding.BindSearchQuery(searchQuery)
-	w.SetContent(container.NewBorder(search, nil, nil, nil, tasksList))
+	tasksList.OnSelected = func(id widget.ListItemID) {
+		row, err := tasksBinding.GetItem(int(id))
+		if err != nil {
+			log.Printf("failed to get row: %s", err)
+			return
+		}
+		rowid := row.(*data.Row[database.Task]).Rowid
+		log.Printf("select rowid=%d", rowid)
+		err = selectedRowid.Set(rowid)
+		if err != nil {
+			log.Printf("failed to get row: %s", err)
+			return
+		}
+	}
+	//viewList:=
+	w.SetContent(container.NewBorder(search, nil, nil, viewList, tasksList))
 	w.Canvas().Focus(search)
 	w.ShowAndRun()
 }

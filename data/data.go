@@ -74,7 +74,7 @@ func (r *Rows[T]) searchCallback() {
 	r.searchQuery = query
 	err = r.getLength()
 	if err != nil {
-		log.Printf("searchCallback: getting new length failed", err)
+		log.Printf("searchCallback: getting new length failed: %s", err)
 	}
 	r.reloadAll()
 }
@@ -110,7 +110,7 @@ func (r *Rows[T]) GetItem(index int) (binding.DataItem, error) {
 		return nil, err
 	}
 	return &Row[T]{
-		r: r, rowid: int(data.GetID()), data: data,
+		r: r, Rowid: int(data.GetID()), data: data,
 	}, nil
 }
 
@@ -166,13 +166,13 @@ func (p *proxyDataListener) DataChanged() {
 
 type Row[T RowData] struct {
 	r     *Rows[T]
-	rowid int
+	Rowid int
 	data  T
 	proxy *proxyDataListener
 }
 
 func (r *Row[T]) callback() {
-	newData, err := r.r.getData(r.rowid)
+	newData, err := r.r.getData(r.Rowid)
 	if err != nil {
 		// assume this is a synchronization issue
 		// log.Printf("failed to get data: %s", err)
@@ -187,9 +187,9 @@ func (r *Row[T]) AddListener(dl binding.DataListener) {
 	dl.DataChanged()
 	if r.proxy == nil {
 		r.proxy = &proxyDataListener{r.callback, dl}
-		r.r.listeners.Store(r.proxy, r.rowid)
+		r.r.listeners.Store(r.proxy, r.Rowid)
 	} else {
-		r.r.listeners.Store(dl, r.rowid)
+		r.r.listeners.Store(dl, r.Rowid)
 	}
 }
 
