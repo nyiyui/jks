@@ -4,6 +4,7 @@ go 1.22.7
 
 require (
 	fyne.io/fyne/v2 v2.5.1
+	fyne.io/x/fyne v0.0.0-20240803204126-8b5b5bfe65ef
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.22

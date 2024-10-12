@@ -14,10 +14,10 @@ import (
 
 type TaskList struct {
 	widget.BaseWidget
-	List          *widget.List
-	Search        *widget.Entry
-	SearchQuery   binding.String
-	SelectedRowid binding.Int
+	List           *widget.List
+	Search         *widget.Entry
+	SearchQuery    binding.String
+	SelectedTaskID binding.Int
 }
 
 func NewTaskList(db *sqlx.DB) (*TaskList, error) {
@@ -46,7 +46,7 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 	tasksBinding.BindSearchQuery(tl.SearchQuery)
 
 	tl.List.OnSelected = func(id widget.ListItemID) {
-		if tl.SelectedRowid == nil {
+		if tl.SelectedTaskID == nil {
 			return
 		}
 		row, err := tasksBinding.GetItem(int(id))
@@ -56,7 +56,7 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 		}
 		rowid := row.(*data.Row[database.Task]).Rowid
 		log.Printf("select rowid=%d", rowid)
-		err = tl.SelectedRowid.Set(rowid)
+		err = tl.SelectedTaskID.Set(rowid)
 		if err != nil {
 			log.Printf("failed to get row: %s", err)
 			return

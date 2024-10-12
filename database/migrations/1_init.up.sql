@@ -10,5 +10,5 @@ CREATE TABLE activity_log(
   location TEXT,
   time_start DATETIME, -- in Unix time
   time_end DATETIME, -- in Unix time
-  FOREIGN KEY(id) REFERENCES tasks(id)
+  FOREIGN KEY(task_id) REFERENCES tasks(id)
 );

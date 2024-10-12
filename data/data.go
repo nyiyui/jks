@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/jmoiron/sqlx"
+	"nyiyui.ca/jks/database"
 )
 
 func NewBinding[T RowData](db *sqlx.DB) (*Rows[T], error) {
@@ -186,4 +187,77 @@ func (r *Row[T]) Get() (string, error) {
 
 func (r *Row[T]) Set(string) error {
 	return errors.New("not implemented yet")
+}
+
+type Activity interface {
+	binding.DataItem
+	Get() (database.Activity, error)
+	Set(database.Activity) error
+	SetRowid(int64) error
+}
+
+type baseBinding struct {
+	listeners sync.Map
+}
+
+func (b *baseBinding) notifyAllListeners() {
+	b.listeners.Range(func(key, value any) bool {
+		key.(binding.DataListener).DataChanged()
+		return true
+	})
+}
+
+func (b *baseBinding) AddListener(dl binding.DataListener) {
+	b.listeners.Store(dl, nil)
+}
+
+func (b *baseBinding) RemoveListener(dl binding.DataListener) {
+	b.listeners.Delete(dl)
+}
+
+type activityBinding struct {
+	*baseBinding
+	db    *sqlx.DB
+	rowid int64
+}
+
+// NewActivity returns a new Activity with the appropriate rowid.
+// Set rowid to zero if rowid is not set.
+func NewActivity(db *sqlx.DB, rowid int64) Activity {
+	return &activityBinding{new(baseBinding), db, rowid}
+}
+
+func (a *activityBinding) Get() (database.Activity, error) {
+	if a.rowid == 0 {
+		return database.Activity{}, nil
+	}
+	row := a.db.QueryRowx(`SELECT * FROM activity_log WHERE id = ? LIMIT 1 OFFSET 0`, a.rowid)
+	var data database.Activity
+	err := row.StructScan(&data)
+	if err != nil {
+		return database.Activity{}, err
+	}
+	return data, nil
+}
+
+func (a *activityBinding) SetRowid(rowid int64) error {
+	a.rowid = rowid
+	a.notifyAllListeners()
+	return nil
+}
+
+func (a *activityBinding) Set(data database.Activity) error {
+	_, err := a.db.Exec(
+		`UPDATE activity_log SET task_id = ?, location = ?, time_start = ?, time_end = ? WHERE id = ?`,
+		data.TaskID,
+		data.Location,
+		data.TimeStart.Unix(),
+		data.TimeEnd.Unix(),
+		a.rowid,
+	)
+	if err != nil {
+		return err
+	}
+	a.notifyAllListeners()
+	return nil
 }

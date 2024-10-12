@@ -60,10 +60,10 @@ func (t Task) String() string {
 
 type Activity struct {
 	ID        int64
-	TaskID    int64
+	TaskID    int64 `db:"task_id"`
 	Location  string
-	TimeStart time.Time
-	TimeEnd   time.Time
+	TimeStart time.Time `db:"time_start"`
+	TimeEnd   time.Time `db:"time_end"`
 }
 
 func (a Activity) GetID() int64 { return a.ID }
