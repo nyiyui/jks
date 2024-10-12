@@ -1,7 +1,6 @@
 package data
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,27 +9,14 @@ import (
 
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/jmoiron/sqlx"
-	"github.com/mattn/go-sqlite3"
 )
 
 func NewBinding[T RowData](db *sqlx.DB) (*Rows[T], error) {
-	c, err := db.Conn(context.Background())
-	if err != nil {
-		return nil, err
-	}
 	r := &Rows[T]{
 		db:        db,
 		tableName: "tasks",
 	}
-	err = r.getLength()
-	if err != nil {
-		return nil, err
-	}
-	err = c.Raw(func(driverConn any) error {
-		conn := driverConn.(*sqlite3.SQLiteConn)
-		conn.RegisterUpdateHook(r.callback)
-		return nil
-	})
+	err := r.getLength()
 	if err != nil {
 		return nil, err
 	}
@@ -135,10 +121,7 @@ func (r *Rows[T]) getLength() error {
 	return nil
 }
 
-func (r *Rows[T]) callback(op int, dbName, tableName string, rowid int64) {
-	if tableName != r.tableName {
-		return
-	}
+func (r *Rows[T]) NotifyRowChange(rowid int64) {
 	r.listeners.Range(func(key, value any) bool {
 		if value == nil || value.(int64) == rowid {
 			key.(binding.DataListener).DataChanged()

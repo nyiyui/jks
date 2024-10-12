@@ -3,13 +3,11 @@ package main
 import (
 	"log"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/widget"
-	"nyiyui.ca/jks/data"
+	"github.com/jmoiron/sqlx"
 	"nyiyui.ca/jks/database"
+	"nyiyui.ca/jks/ui"
 )
 
 func main() {
@@ -28,44 +26,30 @@ func main() {
 	}
 	log.Printf("db ready.")
 
-	tasksBinding, err := data.NewBinding[database.Task](db)
+	log.Printf("binding ready.")
+
+	tl, err := ui.NewTaskList(db)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("binding ready.")
-
-	tasksList := widget.NewListWithData(
-		tasksBinding,
-		func() fyne.CanvasObject {
-			return widget.NewLabel("template")
-		},
-		func(item binding.DataItem, obj fyne.CanvasObject) {
-			row := item.(*data.Row[database.Task])
-			label := obj.(*widget.Label)
-			label.Bind(row)
-		},
-	)
-	searchQuery := binding.NewString()
-	selectedRowid := binding.NewInt()
-	search := widget.NewEntry()
-	search.Bind(searchQuery)
-	tasksBinding.BindSearchQuery(searchQuery)
-	tasksList.OnSelected = func(id widget.ListItemID) {
-		row, err := tasksBinding.GetItem(int(id))
-		if err != nil {
-			log.Printf("failed to get row: %s", err)
-			return
-		}
-		rowid := row.(*data.Row[database.Task]).Rowid
-		log.Printf("select rowid=%d", rowid)
-		err = selectedRowid.Set(rowid)
-		if err != nil {
-			log.Printf("failed to get row: %s", err)
-			return
-		}
-	}
-	//viewList:=
-	w.SetContent(container.NewBorder(search, nil, nil, viewList, tasksList))
-	w.Canvas().Focus(search)
+	tl.SelectedRowid = binding.NewInt()
+	//viewTask := widget.NewLabel("")
+	//viewTask.Bind(selectedRowid)
+	// addButton := widget.NewButton("Add Task", func() {
+	// 	err := addTask(db)
+	// 	if err != nil {
+	// 		log.Printf("add task: %s", err)
+	// 	}
+	// })
+	w.SetContent(tl)
+	//w.Canvas().Focus(tl.Search)
 	w.ShowAndRun()
+}
+
+func addTask(db *sqlx.DB) error {
+	_, err := db.Exec(`INSERT INTO tasks (quick_title) VALUES (?)`, "new task")
+	if err != nil {
+		return err
+	}
+	return nil
 }
