@@ -122,6 +122,7 @@ type Activity struct {
 	locationBinding data.GenericBinding[string]
 	timeEndLabel    *widget.Label
 	timeEndValue    *widget.Entry
+	timeEndBinding  data.GenericBinding[string]
 	timeEndSetNow   *widget.Button
 	binding         data.Activity
 
@@ -159,11 +160,30 @@ func NewActivity(activityBinding data.Activity) *Activity {
 	// 	}
 	// 	return
 	// }
+	a.timeEndBinding = data.NewSubBinding[database.Activity, string](
+		a.binding,
+		func(activity database.Activity) (string, error) {
+			return strconv.FormatInt(activity.TimeEnd.Unix(), 10), nil
+		},
+		func(timeEnd string) (database.Activity, error) {
+			timeEnd2, err := strconv.ParseInt(timeEnd, 10, 64)
+			if err != nil {
+				return database.Activity{}, err
+			}
+			activity, err := a.binding.Get()
+			if err != nil {
+				return database.Activity{}, err
+			}
+			activity.TimeEnd = time.Unix(timeEnd2, 0)
+			return activity, nil
+		},
+	)
 	a.timeEndLabel = widget.NewLabel("End")
 	a.timeEndValue = widget.NewEntry()
+	a.timeEndValue.Bind(a.timeEndBinding)
 	a.timeEndSetNow = widget.NewButton("Now", func() {
 		// TODO: find a way to set time to now without resetting undo
-		// a.timeEndValue.SetText
+		a.timeEndBinding.Set(strconv.FormatInt(time.Now().Unix(), 10))
 	})
 	a.timeEndValue.Validator = func(s string) error {
 		_, err := strconv.ParseInt(s, 10, 32)
@@ -207,8 +227,6 @@ func (a *Activity) DataChanged() {
 	a.activity = activity
 	a.idValue.Text = fmt.Sprint(a.activity.ID)
 	a.idValue.Refresh()
-	a.timeEndValue.Text = strconv.FormatInt(a.activity.TimeEnd.Unix(), 10)
-	a.timeEndValue.Refresh()
 }
 
 func (a *Activity) Disable() {
@@ -225,9 +243,11 @@ func (a *Activity) refresh() {
 	if a.Disabled() {
 		a.locationValue.Disable()
 		a.timeEndValue.Disable()
+		a.timeEndSetNow.Disable()
 	} else {
 		a.locationValue.Enable()
 		a.timeEndValue.Enable()
+		a.timeEndSetNow.Enable()
 	}
 }
 
