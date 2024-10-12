@@ -8,6 +8,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.22
+	github.com/sdassow/fyne-datepicker v0.0.0-20231109153751-6b0e13b1325d
 )
 
 require (
