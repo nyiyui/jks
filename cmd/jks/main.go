@@ -5,6 +5,7 @@ import (
 
 	"net/url"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
@@ -12,7 +13,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/dialog"
-	"github.com/jmoiron/sqlx"
+	"nyiyui.ca/jks/data"
 	"nyiyui.ca/jks/database"
 	"nyiyui.ca/jks/ui"
 )
@@ -31,7 +32,7 @@ func main() {
 
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.HelpIcon(), func() {
-			dialog.ShowAbout("content", []*widget.Hyperlink{
+			dialog.ShowAbout("jks is a function that helps convert tasks and requirements into a concrete schedule.", []*widget.Hyperlink{
 				{Text: "Website", URL: mustParse("https://nyiyui.ca/jks")},
 				{Text: "Source", URL: mustParse("https://github.com/nyiyui/jks")},
 			}, a, w)
@@ -54,29 +55,44 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	taskBinding := data.NewTask(db, 0)
+	taskInfo := ui.NewTaskInfo(taskBinding)
 	tl.SelectedTaskID = binding.NewInt()
+	newProxy(tl.SelectedTaskID, taskBinding)
 	la, err := ui.NewLogActivity(db, w)
 	if err != nil {
 		panic(err)
 	}
 	la.BindTaskID(tl.SelectedTaskID)
-	//viewTask := widget.NewLabel("")
-	//viewTask.Bind(selectedRowid)
-	// addButton := widget.NewButton("Add Task", func() {
-	// 	err := addTask(db)
-	// 	if err != nil {
-	// 		log.Printf("add task: %s", err)
-	// 	}
-	// })
-	w.SetContent(container.NewBorder(toolbar, nil, nil, nil, container.New(layout.NewGridLayout(2), la, tl)))
+	w.SetContent(container.NewBorder(toolbar, nil, nil, nil,
+		container.New(layout.NewGridLayout(2),
+			la,
+			container.NewVBox(tl, taskInfo),
+		),
+	))
 	w.Canvas().Focus(tl.Search)
 	w.ShowAndRun()
 }
 
-func addTask(db *sqlx.DB) error {
-	_, err := db.Exec(`INSERT INTO tasks (quick_title) VALUES (?)`, "new task")
+type proxy struct {
+	source  data.GenericBinding[int]
+	binding data.Task
+}
+
+func newProxy(source data.GenericBinding[int], binding data.Task) *proxy {
+	p := new(proxy)
+	p.source = source
+	p.binding = binding
+	p.source.AddListener(p)
+	return p
+}
+
+func (p *proxy) DataChanged() {
+	taskID, err := p.source.Get()
 	if err != nil {
-		return err
+		fyne.LogError("get task id: %s", err)
+		return
 	}
-	return nil
+	p.binding.SetRowid(int64(taskID))
+	log.Printf("set rowid %d", taskID)
 }

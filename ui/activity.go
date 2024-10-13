@@ -81,12 +81,10 @@ func (la *LogActivity) UnbindTaskID(taskID binding.Int) {
 }
 
 func (la *LogActivity) refresh() {
-	log.Printf("task ID = %d", la.taskID)
 	row := la.db.QueryRowx(`SELECT * FROM tasks WHERE id = ?`, la.taskID)
 	var task database.Task
 	err := row.StructScan(&task)
 	if errors.Is(err, sql.ErrNoRows) {
-		log.Print("no task id")
 		la.lastActivity.Disable()
 		la.newActivitySubmitButton.Disable()
 		la.selectTaskHint.Text = "Select a task to extend."
@@ -104,7 +102,7 @@ func (la *LogActivity) refresh() {
 	var rowid int64
 	err = row.Scan(&rowid)
 	if errors.Is(err, sql.ErrNoRows) {
-		log.Print("no last activity")
+		la.tabs.Select(la.tabNew)
 		la.lastActivity.Disable()
 		la.newActivitySubmitButton.Disable()
 		return
@@ -248,7 +246,6 @@ func (a *Activity) DataChanged() {
 		return
 	}
 	a.activity = activity
-	log.Printf("a.idValue is %p", a.idValue)
 	a.idValue.Text = fmt.Sprint(a.activity.ID)
 	a.idValue.Refresh()
 }

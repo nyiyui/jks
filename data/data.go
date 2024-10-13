@@ -198,6 +198,11 @@ type Activity interface {
 	SetTimeEnd(time.Time) error
 }
 
+type Task interface {
+	GenericBinding[database.Task]
+	SetRowid(int64) error
+}
+
 type baseBinding struct {
 	listeners sync.Map
 }
@@ -295,6 +300,49 @@ func (a *activityBinding) SetLocation(location string) error {
 	_, err := a.db.Exec(
 		`UPDATE activity_log SET location = ? WHERE id = ?`,
 		location,
+		a.rowid,
+	)
+	if err != nil {
+		return err
+	}
+	a.notifyAllListeners()
+	return nil
+}
+
+type taskBinding struct {
+	*baseBinding
+	db    *sqlx.DB
+	rowid int64
+}
+
+func NewTask(db *sqlx.DB, rowid int64) Task {
+	return &taskBinding{new(baseBinding), db, rowid}
+}
+
+func (a *taskBinding) Get() (database.Task, error) {
+	if a.rowid == 0 {
+		return database.Task{}, nil
+	}
+	row := a.db.QueryRowx(`SELECT * FROM tasks WHERE id = ?`, a.rowid)
+	var data database.Task
+	err := row.StructScan(&data)
+	if err != nil {
+		return database.Task{}, err
+	}
+	return data, nil
+}
+
+func (a *taskBinding) SetRowid(rowid int64) error {
+	a.rowid = rowid
+	a.notifyAllListeners()
+	return nil
+}
+
+func (a *taskBinding) Set(data database.Task) error {
+	_, err := a.db.Exec(
+		`UPDATE tasks SET description = ?, quick_title = ? WHERE id = ?`,
+		data.Description,
+		data.QuickTitle,
 		a.rowid,
 	)
 	if err != nil {
