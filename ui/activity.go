@@ -5,10 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
-
-	datepicker "github.com/sdassow/fyne-datepicker"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -18,9 +15,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"nyiyui.ca/jks/data"
 	"nyiyui.ca/jks/database"
+	"nyiyui.ca/jks/xwidget"
 )
-
-var _ = datepicker.NewDatePicker
 
 type LogActivity struct {
 	widget.BaseWidget
@@ -114,17 +110,24 @@ func (la *LogActivity) CreateRenderer() fyne.WidgetRenderer {
 type Activity struct {
 	widget.BaseWidget
 	widget.DisableableWidget
-	activity        database.Activity
-	idLabel         *widget.Label
-	idValue         *widget.Label
+	activity database.Activity
+
+	idLabel *widget.Label
+	idValue *widget.Label
+
 	locationLabel   *widget.Label
 	locationValue   *widget.Entry
 	locationBinding data.GenericBinding[string]
-	timeEndLabel    *widget.Label
-	timeEndValue    *widget.Entry
-	timeEndBinding  data.GenericBinding[string]
-	timeEndSetNow   *widget.Button
-	binding         data.Activity
+
+	timeStartLabel   *widget.Label
+	timeStartValue   *xwidget.DateTime
+	timeStartBinding data.GenericBinding[time.Time]
+
+	timeEndLabel   *widget.Label
+	timeEndValue   *xwidget.DateTime
+	timeEndBinding data.GenericBinding[time.Time]
+
+	binding data.Activity
 
 	container *fyne.Container
 }
@@ -135,18 +138,13 @@ func NewActivity(activityBinding data.Activity) *Activity {
 	a.binding.AddListener(a)
 	a.idLabel = widget.NewLabel("ID")
 	a.idValue = widget.NewLabel("")
-	a.locationBinding = data.NewSubBinding[database.Activity, string](
+	a.locationBinding = data.NewSubBindingImperative[data.Activity, database.Activity, string](
 		a.binding,
 		func(activity database.Activity) (string, error) {
 			return activity.Location, nil
 		},
-		func(location string) (database.Activity, error) {
-			activity, err := a.binding.Get()
-			if err != nil {
-				return database.Activity{}, err
-			}
-			activity.Location = location
-			return activity, nil
+		func(binding data.Activity, location string) error {
+			return binding.SetLocation(location)
 		},
 	)
 	a.locationLabel = widget.NewLabel("Location")
@@ -160,52 +158,35 @@ func NewActivity(activityBinding data.Activity) *Activity {
 	// 	}
 	// 	return
 	// }
-	a.timeEndBinding = data.NewSubBinding[database.Activity, string](
+	a.timeStartBinding = data.NewSubBindingImperative[data.Activity, database.Activity, time.Time](
 		a.binding,
-		func(activity database.Activity) (string, error) {
-			return strconv.FormatInt(activity.TimeEnd.Unix(), 10), nil
+		func(activity database.Activity) (time.Time, error) {
+			return activity.TimeStart, nil
 		},
-		func(timeEnd string) (database.Activity, error) {
-			timeEnd2, err := strconv.ParseInt(timeEnd, 10, 64)
-			if err != nil {
-				return database.Activity{}, err
-			}
-			activity, err := a.binding.Get()
-			if err != nil {
-				return database.Activity{}, err
-			}
-			activity.TimeEnd = time.Unix(timeEnd2, 0)
-			return activity, nil
+		func(binding data.Activity, timeStart time.Time) error {
+			return binding.SetTimeStart(timeStart)
+		},
+	)
+	a.timeStartLabel = widget.NewLabel("Start")
+	a.timeStartValue = xwidget.NewDateTime(a.timeStartBinding)
+	a.timeEndBinding = data.NewSubBindingImperative[data.Activity, database.Activity, time.Time](
+		a.binding,
+		func(activity database.Activity) (time.Time, error) {
+			return activity.TimeEnd, nil
+		},
+		func(binding data.Activity, timeEnd time.Time) error {
+			return binding.SetTimeEnd(timeEnd)
 		},
 	)
 	a.timeEndLabel = widget.NewLabel("End")
-	a.timeEndValue = widget.NewEntry()
-	a.timeEndValue.Bind(a.timeEndBinding)
-	a.timeEndSetNow = widget.NewButton("Now", func() {
-		// TODO: find a way to set time to now without resetting undo
-		a.timeEndBinding.Set(strconv.FormatInt(time.Now().Unix(), 10))
-	})
-	a.timeEndValue.Validator = func(s string) error {
-		_, err := strconv.ParseInt(s, 10, 32)
-		return err
-	}
-	a.timeEndValue.OnChanged = func(newValue string) {
-		epoch, err := strconv.ParseInt(newValue, 10, 32)
-		if err != nil {
-			panic(err) // should have already been validated
-		}
-		a.activity.TimeEnd = time.Unix(epoch, 0)
-		err = a.binding.Set(a.activity)
-		if err != nil {
-			log.Printf("failed to set activity binding: %s", err)
-		}
-		return
-	}
+	a.timeEndValue = xwidget.NewDateTime(a.timeEndBinding)
 
 	a.container = container.New(layout.NewFormLayout(),
 		a.idLabel, a.idValue,
 		a.locationLabel, a.locationValue,
-		a.timeEndLabel, container.NewHBox(a.timeEndValue, a.timeEndSetNow))
+		a.timeStartLabel, a.timeStartValue,
+		a.timeEndLabel, a.timeEndValue,
+	)
 	return a
 }
 
@@ -242,12 +223,12 @@ func (a *Activity) Enable() {
 func (a *Activity) refresh() {
 	if a.Disabled() {
 		a.locationValue.Disable()
+		a.timeStartValue.Disable()
 		a.timeEndValue.Disable()
-		a.timeEndSetNow.Disable()
 	} else {
 		a.locationValue.Enable()
+		a.timeStartValue.Enable()
 		a.timeEndValue.Enable()
-		a.timeEndSetNow.Enable()
 	}
 }
 

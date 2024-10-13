@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/jmoiron/sqlx"
@@ -87,10 +88,8 @@ func (r *Rows[T]) GetItem(index int) (binding.DataItem, error) {
 	var row *sqlx.Row
 	if r.searchQuery == "" {
 		row = r.db.QueryRowx(`SELECT * FROM tasks ORDER BY id ASC LIMIT 1 OFFSET ?`, index)
-		log.Print("select without query")
 	} else {
 		row = r.db.QueryRowx(`SELECT * FROM tasks WHERE quick_title like ? ORDER BY id ASC LIMIT 1 OFFSET ?`, r.searchQuery, index)
-		log.Print("select with query")
 	}
 	err := row.StructScan(&data)
 	if err != nil {
@@ -194,6 +193,9 @@ type Activity interface {
 	Get() (database.Activity, error)
 	Set(database.Activity) error
 	SetRowid(int64) error
+	SetLocation(string) error
+	SetTimeStart(time.Time) error
+	SetTimeEnd(time.Time) error
 }
 
 type baseBinding struct {
@@ -253,6 +255,45 @@ func (a *activityBinding) Set(data database.Activity) error {
 		data.Location,
 		data.TimeStart.Unix(),
 		data.TimeEnd.Unix(),
+		a.rowid,
+	)
+	if err != nil {
+		return err
+	}
+	a.notifyAllListeners()
+	return nil
+}
+
+func (a *activityBinding) SetTimeStart(timeStart time.Time) error {
+	_, err := a.db.Exec(
+		`UPDATE activity_log SET time_start = ? WHERE id = ?`,
+		timeStart.Unix(),
+		a.rowid,
+	)
+	if err != nil {
+		return err
+	}
+	a.notifyAllListeners()
+	return nil
+}
+
+func (a *activityBinding) SetTimeEnd(timeEnd time.Time) error {
+	_, err := a.db.Exec(
+		`UPDATE activity_log SET time_end = ? WHERE id = ?`,
+		timeEnd.Unix(),
+		a.rowid,
+	)
+	if err != nil {
+		return err
+	}
+	a.notifyAllListeners()
+	return nil
+}
+
+func (a *activityBinding) SetLocation(location string) error {
+	_, err := a.db.Exec(
+		`UPDATE activity_log SET location = ? WHERE id = ?`,
+		location,
 		a.rowid,
 	)
 	if err != nil {
