@@ -94,6 +94,7 @@ func (la *LogActivity) refresh() {
 		log.Printf("failed to get task: %s", err)
 		return
 	}
+	la.newActivitySubmitButton.Enable()
 	la.task = task
 	la.selectTaskHint.Text = ""
 	la.selectTaskHint.Refresh()
@@ -104,14 +105,12 @@ func (la *LogActivity) refresh() {
 	if errors.Is(err, sql.ErrNoRows) {
 		la.tabs.Select(la.tabNew)
 		la.lastActivity.Disable()
-		la.newActivitySubmitButton.Disable()
 		return
 	} else if err != nil {
 		log.Printf("failed to get last activity: %s", err)
 		return
 	}
 	la.lastActivity.Enable()
-	la.newActivitySubmitButton.Enable()
 	err = la.lastActivityData.SetRowid(rowid)
 	if err != nil {
 		log.Printf("failed to set last activity: %s", err)

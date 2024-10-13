@@ -9,10 +9,10 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/x/fyne/dialog"
+	xlayout "fyne.io/x/fyne/layout"
 	"nyiyui.ca/jks/data"
 	"nyiyui.ca/jks/database"
 	"nyiyui.ca/jks/ui"
@@ -32,7 +32,7 @@ func main() {
 
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.HelpIcon(), func() {
-			dialog.ShowAbout("jks is a function that helps convert tasks and requirements into a concrete schedule.", []*widget.Hyperlink{
+			dialog.ShowAbout("jks :: Tasks → Schedule", []*widget.Hyperlink{
 				{Text: "Website", URL: mustParse("https://nyiyui.ca/jks")},
 				{Text: "Source", URL: mustParse("https://github.com/nyiyui/jks")},
 			}, a, w)
@@ -65,9 +65,12 @@ func main() {
 	}
 	la.BindTaskID(tl.SelectedTaskID)
 	w.SetContent(container.NewBorder(toolbar, nil, nil, nil,
-		container.New(layout.NewGridLayout(2),
-			la,
-			container.NewVBox(tl, taskInfo),
+		xlayout.NewResponsiveLayout(
+			xlayout.Responsive(la, 1, 1.0/2),
+			xlayout.Responsive(xlayout.NewResponsiveLayout(
+				xlayout.Responsive(tl, 1, 1.0/3),
+				xlayout.Responsive(taskInfo, 1, 2.0/3),
+			), 1, 1.0/2),
 		),
 	))
 	w.Canvas().Focus(tl.Search)

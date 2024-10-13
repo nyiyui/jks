@@ -103,6 +103,10 @@ func (dt *DateTime) Refresh() {
 	dt.BaseWidget.Refresh()
 }
 
+func (dt *DateTime) MinSize() fyne.Size {
+	return dt.container.MinSize()
+}
+
 func (dt *DateTime) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(dt.container)
 }
