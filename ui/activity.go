@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jmoiron/sqlx"
@@ -20,26 +21,53 @@ import (
 
 type LogActivity struct {
 	widget.BaseWidget
-	taskIDData       binding.Int
-	db               *sqlx.DB
-	taskID           int64
+	taskIDData binding.Int
+	db         *sqlx.DB
+	window     fyne.Window
+	taskID     int64
+	tabs       *container.AppTabs
+	tabExtend  *container.TabItem
+	tabNew     *container.TabItem
+
 	task             database.Task
 	lastActivityData data.Activity
 	lastActivity     *Activity
 
 	selectTaskHint *widget.Label
+
+	newActivity             *Activity
+	newActivityData         data.Activity
+	newActivitySubmitButton *widget.Button
 }
 
-func NewLogActivity(db *sqlx.DB) (*LogActivity, error) {
+func NewLogActivity(db *sqlx.DB, window fyne.Window) (*LogActivity, error) {
 	la := new(LogActivity)
 	la.ExtendBaseWidget(la)
 	la.db = db
+	la.window = window
+
 	la.lastActivityData = data.NewActivity(db, 0)
 	la.lastActivity = NewActivity(la.lastActivityData)
 	la.lastActivity.Disable()
 	la.selectTaskHint = widget.NewLabel("")
 	la.selectTaskHint.Importance = widget.LowImportance
+
+	la.newActivityData = data.NewActivityMemory(0, database.Activity{
+		TimeStart: time.Now(),
+		TimeEnd:   time.Now(),
+	})
+	la.newActivity = NewActivity(la.newActivityData)
+	la.newActivitySubmitButton = widget.NewButton("Add", la.newActivitySubmit)
+	la.newActivitySubmitButton.Disable()
 	la.refresh()
+
+	la.tabExtend = container.NewTabItem("Extend Last", container.NewVBox(la.lastActivity, la.selectTaskHint))
+	la.tabNew = container.NewTabItem("Add New", container.NewVBox(la.newActivity, la.newActivitySubmitButton))
+	la.tabs = container.NewAppTabs(
+		la.tabExtend,
+		la.tabNew,
+	)
+
 	return la, nil
 }
 
@@ -60,6 +88,7 @@ func (la *LogActivity) refresh() {
 	if errors.Is(err, sql.ErrNoRows) {
 		log.Print("no task id")
 		la.lastActivity.Disable()
+		la.newActivitySubmitButton.Disable()
 		la.selectTaskHint.Text = "Select a task to extend."
 		la.selectTaskHint.Refresh()
 		return
@@ -77,12 +106,14 @@ func (la *LogActivity) refresh() {
 	if errors.Is(err, sql.ErrNoRows) {
 		log.Print("no last activity")
 		la.lastActivity.Disable()
+		la.newActivitySubmitButton.Disable()
 		return
 	} else if err != nil {
 		log.Printf("failed to get last activity: %s", err)
 		return
 	}
 	la.lastActivity.Enable()
+	la.newActivitySubmitButton.Enable()
 	err = la.lastActivityData.SetRowid(rowid)
 	if err != nil {
 		log.Printf("failed to set last activity: %s", err)
@@ -94,17 +125,34 @@ func (la *LogActivity) DataChanged() {
 	taskID, err := la.taskIDData.Get()
 	if err != nil {
 		log.Printf("error getting task ID: %s", err)
+		return
 	}
 	la.taskID = int64(taskID)
 	la.refresh()
 }
 
-func (la *LogActivity) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewAppTabs(
-		container.NewTabItem("Extend Last", container.NewVBox(la.lastActivity, la.selectTaskHint)),
-		//container.NewTabItem("Add New", la.newActivity),
+func (la *LogActivity) newActivitySubmit() {
+	newActivity, err := la.newActivityData.Get()
+	if err != nil {
+		panic(err)
+	}
+	_, err = la.db.Exec(
+		`INSERT INTO activity_log (task_id, location, time_start, time_end) VALUES (?, ?, ?, ?)`,
+		la.taskID,
+		newActivity.Location,
+		newActivity.TimeStart.Unix(),
+		newActivity.TimeEnd.Unix(),
 	)
-	return widget.NewSimpleRenderer(c)
+	if err != nil {
+		dialog.ShowError(fmt.Errorf("insert activity log into db: %w", err), la.window)
+		fyne.LogError("failed to insert into db: %s", err)
+		return
+	}
+	return
+}
+
+func (la *LogActivity) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(la.tabs)
 }
 
 type Activity struct {
@@ -135,9 +183,9 @@ type Activity struct {
 func NewActivity(activityBinding data.Activity) *Activity {
 	a := new(Activity)
 	a.binding = activityBinding
-	a.binding.AddListener(a)
 	a.idLabel = widget.NewLabel("ID")
 	a.idValue = widget.NewLabel("")
+
 	a.locationBinding = data.NewSubBindingImperative[data.Activity, database.Activity, string](
 		a.binding,
 		func(activity database.Activity) (string, error) {
@@ -150,14 +198,7 @@ func NewActivity(activityBinding data.Activity) *Activity {
 	a.locationLabel = widget.NewLabel("Location")
 	a.locationValue = widget.NewEntry()
 	a.locationValue.Bind(a.locationBinding)
-	// a.locationValue.OnChanged = func(newLocation string) {
-	// 	a.activity.Location = newLocation
-	// 	err := a.binding.Set(a.activity)
-	// 	if err != nil {
-	// 		log.Printf("failed to set activity binding: %s", err)
-	// 	}
-	// 	return
-	// }
+
 	a.timeStartBinding = data.NewSubBindingImperative[data.Activity, database.Activity, time.Time](
 		a.binding,
 		func(activity database.Activity) (time.Time, error) {
@@ -169,6 +210,7 @@ func NewActivity(activityBinding data.Activity) *Activity {
 	)
 	a.timeStartLabel = widget.NewLabel("Start")
 	a.timeStartValue = xwidget.NewDateTime(a.timeStartBinding)
+
 	a.timeEndBinding = data.NewSubBindingImperative[data.Activity, database.Activity, time.Time](
 		a.binding,
 		func(activity database.Activity) (time.Time, error) {
@@ -187,6 +229,7 @@ func NewActivity(activityBinding data.Activity) *Activity {
 		a.timeStartLabel, a.timeStartValue,
 		a.timeEndLabel, a.timeEndValue,
 	)
+	a.binding.AddListener(a)
 	return a
 }
 
@@ -196,7 +239,6 @@ func (a *Activity) MinSize() fyne.Size {
 }
 
 func (a *Activity) DataChanged() {
-	log.Printf("Activity DataChanged")
 	activity, err := a.binding.Get()
 	if err != nil {
 		log.Printf("failed to get ID: %s", err)
@@ -206,6 +248,7 @@ func (a *Activity) DataChanged() {
 		return
 	}
 	a.activity = activity
+	log.Printf("a.idValue is %p", a.idValue)
 	a.idValue.Text = fmt.Sprint(a.activity.ID)
 	a.idValue.Refresh()
 }

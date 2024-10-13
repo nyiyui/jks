@@ -55,7 +55,7 @@ func main() {
 		panic(err)
 	}
 	tl.SelectedTaskID = binding.NewInt()
-	la, err := ui.NewLogActivity(db)
+	la, err := ui.NewLogActivity(db, w)
 	if err != nil {
 		panic(err)
 	}

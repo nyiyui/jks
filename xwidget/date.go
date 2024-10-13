@@ -1,6 +1,7 @@
 package xwidget
 
 import (
+	"log"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -88,7 +89,9 @@ func (dt *DateTime) DataChanged() {
 	currentTime, err := dt.binding.Get()
 	if err != nil {
 		fyne.LogError("failed to get bound time", err)
+		return
 	}
+	log.Printf("got time: %s", currentTime)
 	dt.dateEntry.Text = currentTime.Local().Format("2006-01-02")
 	dt.timeEntry.Text = currentTime.Local().Format("15:04")
 	dt.dayOfWeekLabel.Text = dayOfWeek(currentTime.Local())
@@ -104,6 +107,18 @@ func (dt *DateTime) Refresh() {
 
 func (dt *DateTime) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(dt.container)
+}
+
+func (dt *DateTime) Disable() {
+	dt.dateEntry.Disable()
+	dt.timeEntry.Disable()
+	dt.nowButton.Disable()
+}
+
+func (dt *DateTime) Enable() {
+	dt.dateEntry.Enable()
+	dt.timeEntry.Enable()
+	dt.nowButton.Enable()
 }
 
 func dayOfWeek(t time.Time) string {

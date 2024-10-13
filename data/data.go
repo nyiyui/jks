@@ -210,6 +210,7 @@ func (b *baseBinding) notifyAllListeners() {
 }
 
 func (b *baseBinding) AddListener(dl binding.DataListener) {
+	dl.DataChanged()
 	b.listeners.Store(dl, nil)
 }
 
@@ -233,7 +234,7 @@ func (a *activityBinding) Get() (database.Activity, error) {
 	if a.rowid == 0 {
 		return database.Activity{}, nil
 	}
-	row := a.db.QueryRowx(`SELECT * FROM activity_log WHERE id = ? LIMIT 1 OFFSET 0`, a.rowid)
+	row := a.db.QueryRowx(`SELECT * FROM activity_log WHERE id = ?`, a.rowid)
 	var data database.Activity
 	err := row.StructScan(&data)
 	if err != nil {
