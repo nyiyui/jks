@@ -170,8 +170,8 @@ func NewAddTaskDialog(title string, db *sqlx.DB, window fyne.Window) *AddTaskDia
 	atd := new(AddTaskDialog)
 	atd.at = NewAddTask(db, window)
 	atd.cancel = widget.NewButton("Cancel", atd.onCancel)
-	atd.ok = widget.NewButton("Ok", atd.onOK)
-	atd.ok.Importance = widget.SuccessImportance
+	atd.ok = widget.NewButton("OK", atd.onOK)
+	atd.ok.Importance = widget.HighImportance
 	atd.CustomDialog = dialog.NewCustom(title, "Cancel", atd.at, window)
 	atd.SetButtons([]fyne.CanvasObject{atd.ok, atd.cancel})
 	atd.at.task.AddListener(atd)
