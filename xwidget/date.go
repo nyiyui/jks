@@ -50,7 +50,7 @@ func NewDateTime(binding data.GenericBinding[time.Time]) *DateTime {
 		}
 	}
 	dt.timeEntry.OnChanged = func(s string) {
-		tDelta, err := time.ParseInLocation("15:04", s, time.Local)
+		tDelta, err := time.Parse("15:04", s)
 		if err != nil {
 			return
 		}
@@ -58,7 +58,7 @@ func NewDateTime(binding data.GenericBinding[time.Time]) *DateTime {
 		if err != nil {
 			fyne.LogError("get time to update time", err)
 		}
-		t1 := time.Date(t.Year(), t.Month(), t.Day(), tDelta.Hour(), tDelta.Minute(), tDelta.Second(), t.Nanosecond(), t.Location())
+		t1 := time.Date(t.Year(), t.Month(), t.Day(), tDelta.Hour(), tDelta.Minute(), tDelta.Second(), t.Nanosecond(), time.Local)
 		err = dt.binding.Set(t1)
 		if err != nil {
 			fyne.LogError("update time", err)
