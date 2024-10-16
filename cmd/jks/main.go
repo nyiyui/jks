@@ -9,10 +9,10 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"fyne.io/x/fyne/dialog"
-	xlayout "fyne.io/x/fyne/layout"
+	xdialog "fyne.io/x/fyne/dialog"
 	"nyiyui.ca/jks/data"
 	"nyiyui.ca/jks/database"
 	"nyiyui.ca/jks/ui"
@@ -30,15 +30,6 @@ func main() {
 	a := app.New()
 	w := a.NewWindow("Log Activity")
 
-	toolbar := widget.NewToolbar(
-		widget.NewToolbarAction(theme.HelpIcon(), func() {
-			dialog.ShowAbout("jks :: Tasks → Schedule", []*widget.Hyperlink{
-				{Text: "Website", URL: mustParse("https://nyiyui.ca/jks")},
-				{Text: "Source", URL: mustParse("https://github.com/nyiyui/jks")},
-			}, a, w)
-		}),
-	)
-
 	log.Printf("opening...")
 	db, err := database.Open("db.sqlite3")
 	if err != nil {
@@ -50,6 +41,19 @@ func main() {
 		panic(err)
 	}
 	log.Printf("db ready.")
+
+	toolbar := widget.NewToolbar(
+		widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
+			d := ui.NewAddTaskDialog("New Task", db, w)
+			d.Show()
+		}),
+		widget.NewToolbarAction(theme.HelpIcon(), func() {
+			xdialog.ShowAbout("jks :: Tasks → Schedule", []*widget.Hyperlink{
+				{Text: "Website", URL: mustParse("https://nyiyui.ca/jks")},
+				{Text: "Source", URL: mustParse("https://github.com/nyiyui/jks")},
+			}, a, w)
+		}),
+	)
 
 	tl, err := ui.NewTaskList(db)
 	if err != nil {
@@ -65,12 +69,12 @@ func main() {
 	}
 	la.BindTaskID(tl.SelectedTaskID)
 	w.SetContent(container.NewBorder(toolbar, nil, nil, nil,
-		xlayout.NewResponsiveLayout(
-			xlayout.Responsive(la, 1, 1.0/2),
-			xlayout.Responsive(xlayout.NewResponsiveLayout(
-				xlayout.Responsive(tl, 1, 1.0/3),
-				xlayout.Responsive(taskInfo, 1, 2.0/3),
-			), 1, 1.0/2),
+		container.New(layout.NewGridLayout(2),
+			container.New(layout.NewGridLayout(1),
+				tl,
+				taskInfo,
+			),
+			la,
 		),
 	))
 	w.Canvas().Focus(tl.Search)

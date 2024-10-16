@@ -18,6 +18,7 @@ type TaskList struct {
 	Search         *widget.Entry
 	SearchQuery    binding.String
 	SelectedTaskID binding.Int
+	container      *fyne.Container
 }
 
 func NewTaskList(db *sqlx.DB) (*TaskList, error) {
@@ -64,10 +65,15 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 	}
 	tl.ExtendBaseWidget(tl)
 
+	tl.container = container.NewBorder(tl.Search, nil, nil, nil, tl.List)
+
 	return tl, nil
 }
 
+func (tl *TaskList) MinSize() fyne.Size {
+	return tl.container.MinSize()
+}
+
 func (tl *TaskList) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewBorder(tl.Search, nil, nil, nil, tl.List)
-	return widget.NewSimpleRenderer(c)
+	return widget.NewSimpleRenderer(tl.container)
 }

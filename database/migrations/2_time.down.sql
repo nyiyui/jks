@@ -1,0 +1,2 @@
+ALTER TABLE tasks DROP COLUMN deadline;
+ALTER TABLE tasks DROP COLUMN due;

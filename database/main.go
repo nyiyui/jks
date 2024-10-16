@@ -50,6 +50,13 @@ type Task struct {
 	ID          int64
 	Description string
 	QuickTitle  string `db:"quick_title"`
+
+	// Deadline is the time after which this task is useless to complete.
+	// For example, studying for an exam after the exam itself is useless (for the purpose of scoring well on the exam).
+	// In this case, the deadline would be the exam start time.
+	// In the future, this may become a reference to another task, such that once that task is started, this task is useless to complete..
+	Deadline *time.Time `db:"deadline"`
+	Due      *time.Time `db:"due"`
 }
 
 func (t Task) GetID() int64 { return t.ID }

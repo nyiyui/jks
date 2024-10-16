@@ -145,6 +145,8 @@ func (la *LogActivity) newActivitySubmit() {
 		fyne.LogError("failed to insert into db: %s", err)
 		return
 	}
+	la.tabs.Select(la.tabExtend)
+	la.refresh()
 	return
 }
 
