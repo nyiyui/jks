@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -45,30 +46,34 @@ type TaskList struct {
 	SearchQuery    binding.String
 	SelectedTaskID binding.Int
 	container      *fyne.Container
+
+	// uiTime is the time at which the UI is conceptually created. Tasks with a deadline before this time should not be displayed.
+	uiTime time.Time
 }
 
 func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 	tl := new(TaskList)
+	tl.uiTime = time.Now()
 	tasksBinding := data.NewRows2[database.Task](db, func(rowid int) *sqlx.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND id = ?`, query2, query2, rowid)
+			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR deadline >= ?) AND id = ?`, query2, query2, tl.uiTime.Unix(), rowid)
 		} else {
-			return db.QueryRowx(`SELECT * FROM tasks WHERE id = ?`, rowid)
+			return db.QueryRowx(`SELECT * FROM tasks WHERE (deadline IS NULL OR deadline >= ?) AND id = ?`, tl.uiTime.Unix(), rowid)
 		}
 	}, func(index int) *sqlx.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, query2, query2, index)
+			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR deadline >= ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, query2, query2, tl.uiTime.Unix(), index)
 		} else {
-			return db.QueryRowx(`SELECT * FROM tasks ORDER BY id ASC LIMIT 1 OFFSET ?`, index)
+			return db.QueryRowx(`SELECT * FROM tasks WHERE (deadline IS NULL OR deadline >= ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, tl.uiTime.Unix(), index)
 		}
 	}, func() *sql.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (quick_title like ? OR description like ?)`, query2, query2)
+			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR deadline >= ?)`, query2, query2, tl.uiTime.Unix())
 		} else {
-			return db.QueryRow(`SELECT COUNT(*) FROM tasks`)
+			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (deadline IS NULL OR deadline >= ?)`, tl.uiTime.Unix())
 		}
 	})
 	tl.List = widget.NewListWithData(
@@ -98,7 +103,7 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 			log.Printf("failed to get row: %s", err)
 			return
 		}
-		rowid := row.(*data.Row[database.Task]).Rowid
+		rowid := row.(*data.Row2[database.Task]).Rowid
 		log.Printf("select rowid=%d", rowid)
 		err = tl.SelectedTaskID.Set(rowid)
 		if err != nil {
