@@ -57,23 +57,23 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 	tasksBinding := data.NewRows2[database.Task](db, func(rowid int) *sqlx.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR deadline >= ?) AND id = ?`, query2, query2, tl.uiTime.Unix(), rowid)
+			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR UNIXEPOCH(deadline) >= ?) AND id = ?`, query2, query2, tl.uiTime.Unix(), rowid)
 		} else {
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (deadline IS NULL OR deadline >= ?) AND id = ?`, tl.uiTime.Unix(), rowid)
+			return db.QueryRowx(`SELECT * FROM tasks WHERE (deadline IS NULL OR UNIXEPOCH(deadline) >= ?) AND id = ?`, tl.uiTime.Unix(), rowid)
 		}
 	}, func(index int) *sqlx.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR deadline >= ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, query2, query2, tl.uiTime.Unix(), index)
+			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR UNIXEPOCH(deadline) >= ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, query2, query2, tl.uiTime.Unix(), index)
 		} else {
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (deadline IS NULL OR deadline >= ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, tl.uiTime.Unix(), index)
+			return db.QueryRowx(`SELECT * FROM tasks WHERE (deadline IS NULL OR UNIXEPOCH(deadline) >= ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, tl.uiTime.Unix(), index)
 		}
 	}, func() *sql.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR deadline >= ?)`, query2, query2, tl.uiTime.Unix())
+			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR UNIXEPOCH(deadline) >= ?)`, query2, query2, tl.uiTime.Unix())
 		} else {
-			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (deadline IS NULL OR deadline >= ?)`, tl.uiTime.Unix())
+			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (deadline IS NULL OR UNIXEPOCH(deadline) >= ?)`, tl.uiTime.Unix())
 		}
 	})
 	tl.List = widget.NewListWithData(

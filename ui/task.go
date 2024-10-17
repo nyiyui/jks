@@ -29,11 +29,13 @@ type TaskInfo struct {
 
 	deadlineLabel   *widget.Label
 	deadlineValue   *xwidget.DateTime
+	deadlineHint    *widget.Label
 	deadlineBinding data.GenericBinding[time.Time]
 
 	dueLabel   *widget.Label
 	dueValue   *xwidget.DateTime
 	dueBinding data.GenericBinding[time.Time]
+	dueHint    *widget.Label
 
 	descView *widget.RichText
 	descEdit *widget.Entry
@@ -72,6 +74,7 @@ func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
 	)
 	ti.deadlineLabel = widget.NewLabel("Deadline")
 	ti.deadlineValue = xwidget.NewDateTime(ti.deadlineBinding)
+	ti.deadlineHint = widget.NewLabel("")
 
 	ti.dueBinding = data.NewSubBinding[database.Task, time.Time](
 		ti.binding,
@@ -88,6 +91,7 @@ func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
 	)
 	ti.dueLabel = widget.NewLabel("Due")
 	ti.dueValue = xwidget.NewDateTime(ti.dueBinding)
+	ti.dueHint = widget.NewLabel("")
 
 	ti.descView = widget.NewRichText()
 	ti.descEdit = widget.NewMultiLineEntry()
@@ -100,7 +104,9 @@ func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
 			ti.idLabel, ti.idValue,
 			ti.qtLabel, ti.qtValue,
 			ti.deadlineLabel, ti.deadlineValue,
+			layout.NewSpacer(), ti.deadlineHint,
 			ti.dueLabel, ti.dueValue,
+			layout.NewSpacer(), ti.dueHint,
 		),
 		container.New(layout.NewGridLayout(2),
 			ti.descView,
@@ -139,6 +145,20 @@ func (ti *TaskInfo) DataChanged() {
 	ti.descView.Refresh()
 	ti.descEdit.Text = ti.task.Description
 	ti.descEdit.Refresh()
+	if ti.task.Deadline != nil {
+		d := ti.task.Deadline.Sub(time.Now())
+		ti.deadlineHint.Text = formatDuration(d)
+	} else {
+		ti.deadlineHint.Text = ""
+	}
+	ti.deadlineHint.Refresh()
+	if ti.task.Due != nil {
+		d := ti.task.Due.Sub(time.Now())
+		ti.dueHint.Text = formatDuration(d)
+	} else {
+		ti.dueHint.Text = ""
+	}
+	ti.dueHint.Refresh()
 }
 
 func (ti *TaskInfo) CreateRenderer() fyne.WidgetRenderer {
@@ -241,6 +261,7 @@ func (atd *AddTaskDialog) onCancel() {
 		dialog.ShowError(fmt.Errorf("deleting task id %d on dialog cancel: %w", atd.at.rowid, err), atd.at.window)
 		return
 	}
+	atd.CustomDialog.Hide()
 }
 
 func (atd *AddTaskDialog) onOK() {
