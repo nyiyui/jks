@@ -340,9 +340,11 @@ func (a *taskBinding) SetRowid(rowid int64) error {
 
 func (a *taskBinding) Set(data database.Task) error {
 	_, err := a.db.Exec(
-		`UPDATE tasks SET description = ?, quick_title = ? WHERE id = ?`,
+		`UPDATE tasks SET description = ?, quick_title = ?, deadline = ?, due = ? WHERE id = ?`,
 		data.Description,
 		data.QuickTitle,
+		data.Deadline,
+		data.Due,
 		a.rowid,
 	)
 	if err != nil {

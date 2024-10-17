@@ -76,3 +76,44 @@ func (sb *subBinding[B, M, S]) Set(value S) error {
 	}
 	panic("unreachable")
 }
+
+type Typed[T any] struct {
+	lower binding.Untyped
+}
+
+func NewTyped[T any]() *Typed[T] {
+	return &Typed[T]{lower: binding.NewUntyped()}
+}
+
+func (t *Typed[T]) AddListener(dl binding.DataListener) {
+	t.lower.AddListener(dl)
+}
+
+func (t *Typed[T]) RemoveListener(dl binding.DataListener) {
+	t.lower.RemoveListener(dl)
+}
+
+func (t *Typed[T]) Get() (T, error) {
+	value, err := t.lower.Get()
+	if value == nil {
+		var zero T
+		return zero, err
+	}
+	return value.(T), err
+}
+
+func (t *Typed[T]) Set(value T) error {
+	return t.lower.Set(value)
+}
+
+type proxy struct {
+	f func()
+}
+
+func NewProxy(f func()) binding.DataListener {
+	return &proxy{f}
+}
+
+func (p *proxy) DataChanged() {
+	p.f()
+}

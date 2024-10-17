@@ -12,6 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"nyiyui.ca/jks/data"
 	"nyiyui.ca/jks/database"
+	"nyiyui.ca/jks/xwidget"
 )
 
 type TaskInfo struct {
@@ -25,6 +26,10 @@ type TaskInfo struct {
 
 	qtLabel *widget.Label
 	qtValue *widget.Entry
+
+	deadlineLabel   *widget.Label
+	deadlineValue   *xwidget.DateTime
+	deadlineBinding data.GenericBinding[time.Time]
 
 	descView *widget.RichText
 	descEdit *widget.Entry
@@ -47,6 +52,23 @@ func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
 			return
 		}
 	}
+
+	ti.deadlineBinding = data.NewSubBinding[database.Task, time.Time](
+		ti.binding,
+		func(task database.Task) (time.Time, error) {
+			if task.Deadline == nil {
+				return time.Time{}, nil
+			}
+			return *task.Deadline, nil
+		},
+		func(deadline time.Time) (database.Task, error) {
+			ti.task.Deadline = &deadline
+			return ti.task, nil
+		},
+	)
+	ti.deadlineLabel = widget.NewLabel("Deadline")
+	ti.deadlineValue = xwidget.NewDateTime(ti.deadlineBinding)
+
 	ti.descView = widget.NewRichText()
 	ti.descEdit = widget.NewMultiLineEntry()
 	ti.descEdit.Wrapping = fyne.TextWrapWord
@@ -57,6 +79,7 @@ func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
 		container.New(layout.NewFormLayout(),
 			ti.idLabel, ti.idValue,
 			ti.qtLabel, ti.qtValue,
+			ti.deadlineLabel, ti.deadlineValue,
 		),
 		container.New(layout.NewGridLayout(2),
 			ti.descView,
