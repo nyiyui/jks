@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/jmoiron/sqlx"
 	"nyiyui.ca/jks/database"
@@ -21,9 +22,18 @@ type Rows2[T RowData] struct {
 	getLength  func() *sql.Row
 }
 
-func NewRows2[T RowData](db *sqlx.DB) *Rows2[T] {
-	r := &Rows2[T]{db: db}
+func NewRows2[T RowData](db *sqlx.DB, getByRowid func(rowid int) *sqlx.Row, getByIndex func(index int) *sqlx.Row, getLength func() *sql.Row) *Rows2[T] {
+	r := &Rows2[T]{db: db, getByRowid: getByRowid, getByIndex: getByIndex, getLength: getLength}
 	return r
+}
+
+// DataChanged signifies that the query somehow changed, and all items need to be reloaded.
+func (r *Rows2[T]) DataChanged() {
+	err := r.UpdateLength()
+	if err != nil {
+		fyne.LogError("update length", err)
+	}
+	r.reloadAll()
 }
 
 func (r *Rows2[T]) AddListener(dl binding.DataListener) {
