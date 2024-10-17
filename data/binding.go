@@ -1,8 +1,6 @@
 package data
 
 import (
-	"log"
-
 	"fyne.io/fyne/v2/data/binding"
 )
 
@@ -68,7 +66,6 @@ func (sb *subBinding[B, M, S]) Set(value S) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("main value to submit: %v", mainValue)
 		return sb.main.Set(mainValue)
 	}
 	if sb.apply != nil {
