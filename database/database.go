@@ -71,6 +71,27 @@ type Activity struct {
 	Location  string
 	TimeStart time.Time `db:"time_start"`
 	TimeEnd   time.Time `db:"time_end"`
+	Status    Status
 }
 
 func (a Activity) GetID() int64 { return a.ID }
+
+type Status int
+
+const (
+	StatusUnknown Status = iota
+	StatusNotStarted
+	StatusInProgress
+	StatusDone
+)
+
+var StatusNames = [...]string{
+	StatusUnknown:    "Unknown",
+	StatusNotStarted: "Not Started",
+	StatusInProgress: "In Progress",
+	StatusDone:       "Done",
+}
+
+func (s Status) String() string {
+	return StatusNames[s]
+}

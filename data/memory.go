@@ -49,3 +49,9 @@ func (a *activityMemory) SetTimeEnd(timeEnd time.Time) error {
 	a.notifyAllListeners()
 	return nil
 }
+
+func (a *activityMemory) SetStatus(s database.Status) error {
+	a.a.Status = s
+	a.notifyAllListeners()
+	return nil
+}

@@ -196,6 +196,7 @@ type Activity interface {
 	SetLocation(string) error
 	SetTimeStart(time.Time) error
 	SetTimeEnd(time.Time) error
+	SetStatus(database.Status) error
 }
 
 type Task interface {
@@ -287,6 +288,19 @@ func (a *activityBinding) SetTimeEnd(timeEnd time.Time) error {
 	_, err := a.db.Exec(
 		`UPDATE activity_log SET time_end = ? WHERE id = ?`,
 		timeEnd.Unix(),
+		a.rowid,
+	)
+	if err != nil {
+		return err
+	}
+	a.notifyAllListeners()
+	return nil
+}
+
+func (a *activityBinding) SetStatus(s database.Status) error {
+	_, err := a.db.Exec(
+		`UPDATE activity_log SET status = ? WHERE id = ?`,
+		s,
 		a.rowid,
 	)
 	if err != nil {

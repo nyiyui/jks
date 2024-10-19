@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -174,6 +175,9 @@ type Activity struct {
 	timeEndValue   *xwidget.DateTime
 	timeEndBinding data.GenericBinding[time.Time]
 
+	statusLabel *widget.Label
+	statusValue *widget.Select
+
 	binding data.Activity
 
 	container *fyne.Container
@@ -222,11 +226,18 @@ func NewActivity(activityBinding data.Activity) *Activity {
 	a.timeEndLabel = widget.NewLabel("End")
 	a.timeEndValue = xwidget.NewDateTime(a.timeEndBinding)
 
+	a.statusLabel = widget.NewLabel("Status")
+	a.statusValue = widget.NewSelect(database.StatusNames[:], func(value string) {
+		s := slices.Index(database.StatusNames[:], value)
+		a.binding.SetStatus(database.Status(s))
+	})
+
 	a.container = container.New(layout.NewFormLayout(),
 		a.idLabel, a.idValue,
 		a.locationLabel, a.locationValue,
 		a.timeStartLabel, a.timeStartValue,
 		a.timeEndLabel, a.timeEndValue,
+		a.statusLabel, a.statusValue,
 	)
 	a.binding.AddListener(a)
 	return a
@@ -249,6 +260,8 @@ func (a *Activity) DataChanged() {
 	a.activity = activity
 	a.idValue.Text = fmt.Sprint(a.activity.ID)
 	a.idValue.Refresh()
+	a.statusValue.Selected = fmt.Sprint(a.activity.Status)
+	a.statusValue.Refresh()
 }
 
 func (a *Activity) Disable() {
@@ -266,10 +279,12 @@ func (a *Activity) refresh() {
 		a.locationValue.Disable()
 		a.timeStartValue.Disable()
 		a.timeEndValue.Disable()
+		a.statusValue.Disable()
 	} else {
 		a.locationValue.Enable()
 		a.timeStartValue.Enable()
 		a.timeEndValue.Enable()
+		a.statusValue.Enable()
 	}
 }
 
