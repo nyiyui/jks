@@ -135,11 +135,12 @@ func (la *LogActivity) newActivitySubmit() {
 		panic(err)
 	}
 	_, err = la.db.Exec(
-		`INSERT INTO activity_log (task_id, location, time_start, time_end) VALUES (?, ?, ?, ?)`,
+		`INSERT INTO activity_log (task_id, location, time_start, time_end, status) VALUES (?, ?, ?, ?, ?)`,
 		la.taskID,
 		newActivity.Location,
 		newActivity.TimeStart.Unix(),
 		newActivity.TimeEnd.Unix(),
+		newActivity.Status,
 	)
 	if err != nil {
 		dialog.ShowError(fmt.Errorf("insert activity log into db: %w", err), la.window)
