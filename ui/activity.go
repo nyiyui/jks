@@ -172,6 +172,10 @@ type Activity struct {
 	timeStartValue   *xwidget.DateTime
 	timeStartBinding data.GenericBinding[time.Time]
 
+	durationLabel   *widget.Label
+	durationValue   *widget.Label
+	durationBinding data.GenericBinding[string]
+
 	timeEndLabel   *widget.Label
 	timeEndValue   *xwidget.DateTime
 	timeEndBinding data.GenericBinding[time.Time]
@@ -215,6 +219,17 @@ func NewActivity(activityBinding data.Activity) *Activity {
 	a.timeStartLabel = widget.NewLabel("Start")
 	a.timeStartValue = xwidget.NewDateTime(a.timeStartBinding)
 
+	a.durationLabel = widget.NewLabel("Duration")
+	a.durationValue = widget.NewLabel("")
+	a.durationBinding = data.NewSubBinding[database.Activity, string](
+		a.binding,
+		func(activity database.Activity) (string, error) {
+			return formatDuration(activity.TimeEnd.Sub(activity.TimeStart)), nil
+		},
+		nil,
+	)
+	a.durationValue.Bind(a.durationBinding)
+
 	a.timeEndBinding = data.NewSubBindingImperative[data.Activity, database.Activity, time.Time](
 		a.binding,
 		func(activity database.Activity) (time.Time, error) {
@@ -237,6 +252,7 @@ func NewActivity(activityBinding data.Activity) *Activity {
 		a.idLabel, a.idValue,
 		a.locationLabel, a.locationValue,
 		a.timeStartLabel, a.timeStartValue,
+		a.durationLabel, a.durationValue,
 		a.timeEndLabel, a.timeEndValue,
 		a.statusLabel, a.statusValue,
 	)
