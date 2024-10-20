@@ -67,12 +67,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	taskListHint := widget.NewLabel("Only showing incomplete tasks before deadline.")
+	taskListHint.Importance = widget.LowImportance
 	la.BindTaskID(tl.SelectedTaskID)
 	w.SetContent(container.NewBorder(toolbar, nil, nil, nil,
 		container.New(layout.NewGridLayout(2),
-			container.New(layout.NewGridLayout(1),
-				tl,
-				taskInfo,
+			container.NewBorder(
+				taskListHint, nil, nil, nil,
+				container.New(layout.NewGridLayout(1),
+					tl,
+					taskInfo,
+				),
 			),
 			la,
 		),

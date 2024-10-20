@@ -51,29 +51,38 @@ type TaskList struct {
 	uiTime time.Time
 }
 
+const deadlineWhere = `(deadline IS NULL OR UNIXEPOCH(deadline) >= ?)`
+const queryWhere = `(quick_title like ? OR description like ?)`
+const notDoneJoinWhere = `
+JOIN activity_log ON (tasks.id = activity_log.task_id)
+WHERE activity_log.time_end = (SELECT MAX(time_end) FROM activity_log WHERE activity_log.task_id = tasks.id)
+AND activity_log.status != 3
+`
+
 func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 	tl := new(TaskList)
 	tl.uiTime = time.Now()
 	tasksBinding := data.NewRows2[database.Task](db, func(rowid int) *sqlx.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR UNIXEPOCH(deadline) >= ?) AND id = ?`, query2, query2, tl.uiTime.Unix(), rowid)
+			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+` AND id = ?`, query2, query2, tl.uiTime.Unix(), rowid)
 		} else {
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (deadline IS NULL OR UNIXEPOCH(deadline) >= ?) AND id = ?`, tl.uiTime.Unix(), rowid)
+			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+` AND id = ?`, tl.uiTime.Unix(), rowid)
 		}
 	}, func(index int) *sqlx.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR UNIXEPOCH(deadline) >= ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, query2, query2, tl.uiTime.Unix(), index)
+			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+` ORDER BY id ASC LIMIT 1 OFFSET ?`, query2, query2, tl.uiTime.Unix(), index)
 		} else {
-			return db.QueryRowx(`SELECT * FROM tasks WHERE (deadline IS NULL OR UNIXEPOCH(deadline) >= ?) ORDER BY id ASC LIMIT 1 OFFSET ?`, tl.uiTime.Unix(), index)
+			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+` ORDER BY id ASC LIMIT 1 OFFSET ?`, tl.uiTime.Unix(), index)
 		}
 	}, func() *sql.Row {
+		log.Printf(`SELECT * FROM tasks ` + notDoneJoinWhere + queryWhere + ` AND ` + deadlineWhere)
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (quick_title like ? OR description like ?) AND (deadline IS NULL OR UNIXEPOCH(deadline) >= ?)`, query2, query2, tl.uiTime.Unix())
+			return db.QueryRow(`SELECT COUNT(*) FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+``, query2, query2, tl.uiTime.Unix())
 		} else {
-			return db.QueryRow(`SELECT COUNT(*) FROM tasks WHERE (deadline IS NULL OR UNIXEPOCH(deadline) >= ?)`, tl.uiTime.Unix())
+			return db.QueryRow(`SELECT COUNT(*) FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+``, tl.uiTime.Unix())
 		}
 	})
 	tl.List = widget.NewListWithData(
