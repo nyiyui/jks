@@ -109,7 +109,7 @@ func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
 			layout.NewSpacer(), ti.dueHint,
 		),
 		container.New(layout.NewGridLayout(2),
-			ti.descView,
+			container.NewVScroll(ti.descView),
 			ti.descEdit,
 		),
 	)
@@ -266,4 +266,15 @@ func (atd *AddTaskDialog) onCancel() {
 
 func (atd *AddTaskDialog) onOK() {
 	atd.CustomDialog.Hide()
+}
+
+type baseMinSizeScroll struct {
+	*container.Scroll
+	baseSize fyne.Size
+}
+
+func (s *baseMinSizeScroll) MinSize() fyne.Size {
+	size1 := s.Scroll.MinSize()
+	size1.Height = s.baseSize.Height
+	return size1
 }
