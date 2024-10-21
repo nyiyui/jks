@@ -58,6 +58,9 @@ JOIN activity_log ON (tasks.id = activity_log.task_id)
 WHERE activity_log.time_end = (SELECT MAX(time_end) FROM activity_log WHERE activity_log.task_id = tasks.id)
 AND activity_log.status != 3
 `
+const unionNoLogs = `
+WHERE NOT EXISTS (SELECT * FROM activity_log WHERE activity_log.task_id = tasks.id)
+`
 
 func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 	tl := new(TaskList)
@@ -65,23 +68,76 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 	tasksBinding := data.NewRows2[database.Task](db, func(rowid int) *sqlx.Row {
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+` AND id = ?`, query2, query2, tl.uiTime.Unix(), rowid)
+			return db.QueryRowx(
+				`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+` AND id = ?`+
+					` UNION ALL `+
+					`SELECT * FROM tasks `+unionNoLogs+` AND `+queryWhere+` AND `+deadlineWhere+` AND id = ?`,
+				query2, query2, tl.uiTime.Unix(), rowid,
+				query2, query2, tl.uiTime.Unix(), rowid,
+			)
 		} else {
-			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+` AND id = ?`, tl.uiTime.Unix(), rowid)
+			return db.QueryRowx(
+				`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+` AND id = ?`+
+					` UNION ALL `+
+					`SELECT * FROM tasks `+unionNoLogs+` AND `+deadlineWhere+` AND id = ?`,
+				tl.uiTime.Unix(), rowid,
+				tl.uiTime.Unix(), rowid,
+			)
 		}
 	}, func(index int) *sqlx.Row {
+		log.Printf("\n\n\n")
+		log.Printf(
+			`SELECT * FROM (` +
+				`SELECT tasks.* FROM tasks ` + notDoneJoinWhere + ` AND ` + deadlineWhere +
+				` UNION ALL ` +
+				`SELECT * FROM tasks ` + unionNoLogs + ` AND ` + deadlineWhere +
+				`) ORDER BY id ASC LIMIT 1 OFFSET ?`,
+		)
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+` ORDER BY id ASC LIMIT 1 OFFSET ?`, query2, query2, tl.uiTime.Unix(), index)
+			return db.QueryRowx(
+				`SELECT * FROM (`+
+					`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+
+					` UNION ALL `+
+					`SELECT * FROM tasks `+unionNoLogs+` AND `+queryWhere+` AND `+deadlineWhere+
+					`) ORDER BY id ASC LIMIT 1 OFFSET ?`,
+				query2, query2, tl.uiTime.Unix(),
+				query2, query2, tl.uiTime.Unix(), index,
+			)
 		} else {
-			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+` ORDER BY id ASC LIMIT 1 OFFSET ?`, tl.uiTime.Unix(), index)
+			return db.QueryRowx(
+				`SELECT * FROM (`+
+					`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+
+					` UNION ALL `+
+					`SELECT * FROM tasks `+unionNoLogs+` AND `+deadlineWhere+
+					`) ORDER BY id ASC LIMIT 1 OFFSET ?`,
+				tl.uiTime.Unix(),
+				tl.uiTime.Unix(), index,
+			)
 		}
 	}, func() *sql.Row {
+		log.Printf(`SELECT * FROM tasks ` + notDoneJoinWhere + ` AND ` + deadlineWhere + ``)
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
-			return db.QueryRow(`SELECT COUNT(*) FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+``, query2, query2, tl.uiTime.Unix())
+			return db.QueryRow(
+				`SELECT COUNT(*) from (`+
+					`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+` AND `+queryWhere+
+					` UNION ALL `+
+					`SELECT * FROM tasks `+unionNoLogs+` AND `+deadlineWhere+` AND `+queryWhere+
+					`)`,
+				tl.uiTime.Unix(), query2, query2,
+				tl.uiTime.Unix(), query2, query2,
+			)
 		} else {
-			return db.QueryRow(`SELECT COUNT(*) FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+``, tl.uiTime.Unix())
+			return db.QueryRow(
+				`SELECT COUNT(*) from (`+
+					`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+
+					` UNION ALL `+
+					`SELECT * FROM tasks `+unionNoLogs+` AND `+deadlineWhere+
+					`)`,
+				tl.uiTime.Unix(),
+				tl.uiTime.Unix(),
+			)
 		}
 	})
 	tl.List = widget.NewListWithData(

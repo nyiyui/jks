@@ -1,5 +1,11 @@
 package data
 
+import (
+	"time"
+
+	"nyiyui.ca/jks/database"
+)
+
 type LazyBinding[T any] struct {
 	*baseBinding
 	lower    GenericBinding[T]
@@ -45,4 +51,14 @@ func (l *LazyBinding[T]) Set(data T) error {
 
 func (l *LazyBinding[T]) Initialized() bool {
 	return l.lower != nil
+}
+
+type LazyTaskBinding struct {
+	*LazyBinding[database.Task]
+}
+
+func (lt *LazyTaskBinding) SetRowid(int64) error { return nil }
+
+func (lt *LazyTaskBinding) GetTotalTime() (time.Duration, error) {
+	return 0, nil
 }

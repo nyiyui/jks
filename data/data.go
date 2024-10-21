@@ -202,6 +202,7 @@ type Activity interface {
 type Task interface {
 	GenericBinding[database.Task]
 	SetRowid(int64) error
+	GetTotalTime() (time.Duration, error)
 }
 
 type baseBinding struct {
@@ -366,4 +367,18 @@ func (a *taskBinding) Set(data database.Task) error {
 	}
 	a.notifyAllListeners()
 	return nil
+}
+
+func (a *taskBinding) GetTotalTime() (time.Duration, error) {
+	row := a.db.QueryRow(
+		`SELECT SUM(time_end-time_start) FROM activity_log WHERE task_id = ?`,
+		a.rowid,
+	)
+	var sum int
+	err := row.Scan(&sum)
+	if err != nil {
+		return 0, err
+	}
+	log.Printf("sum = %d", sum)
+	return time.Duration(sum) * time.Second, nil
 }

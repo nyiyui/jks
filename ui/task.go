@@ -17,7 +17,7 @@ import (
 
 type TaskInfo struct {
 	widget.BaseWidget
-	binding   data.GenericBinding[database.Task]
+	binding   data.Task
 	task      database.Task
 	container *fyne.Container
 
@@ -26,6 +26,9 @@ type TaskInfo struct {
 
 	qtLabel *widget.Label
 	qtValue *widget.Entry
+
+	spentLabel *widget.Label
+	spentValue *widget.Label
 
 	deadlineLabel   *widget.Label
 	deadlineValue   *xwidget.DateTime
@@ -41,7 +44,7 @@ type TaskInfo struct {
 	descEdit *widget.Entry
 }
 
-func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
+func NewTaskInfo(binding data.Task) *TaskInfo {
 	ti := new(TaskInfo)
 	ti.binding = binding
 
@@ -58,6 +61,9 @@ func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
 			return
 		}
 	}
+
+	ti.spentLabel = widget.NewLabel("Spent")
+	ti.spentValue = widget.NewLabel("")
 
 	ti.deadlineBinding = data.NewSubBinding[database.Task, time.Time](
 		ti.binding,
@@ -103,6 +109,7 @@ func NewTaskInfo(binding data.GenericBinding[database.Task]) *TaskInfo {
 		container.New(layout.NewFormLayout(),
 			ti.idLabel, ti.idValue,
 			ti.qtLabel, ti.qtValue,
+			ti.spentLabel, ti.spentValue,
 			ti.deadlineLabel, ti.deadlineValue,
 			layout.NewSpacer(), ti.deadlineHint,
 			ti.dueLabel, ti.dueValue,
@@ -136,6 +143,13 @@ func (ti *TaskInfo) DataChanged() {
 	if task == (database.Task{}) {
 		return
 	}
+	if spent, err := ti.binding.GetTotalTime(); err != nil {
+		fyne.LogError("failed to get time spent", err)
+		ti.spentValue.Text = "error"
+	} else {
+		ti.spentValue.Text = formatDuration(spent)
+	}
+	ti.spentValue.Refresh()
 	ti.task = task
 	ti.idValue.Text = fmt.Sprint(ti.task.ID)
 	ti.idValue.Refresh()
@@ -172,7 +186,7 @@ type AddTask struct {
 	window fyne.Window
 
 	taskInfo *TaskInfo
-	task     *data.LazyBinding[database.Task]
+	task     *data.LazyTaskBinding
 	rowid    int64
 
 	container *fyne.Container
@@ -185,7 +199,7 @@ func NewAddTask(db *sqlx.DB, window fyne.Window) *AddTask {
 	at.db = db
 	at.window = window
 
-	at.task = data.NewLazyBinding(
+	at.task = &data.LazyTaskBinding{data.NewLazyBinding(
 		func(saved database.Task) (data.GenericBinding[database.Task], error) {
 			result, err := at.db.Exec(
 				`INSERT INTO tasks (description, quick_title, deadline, due) VALUES (?, ?, ?, ?)`,
@@ -205,7 +219,7 @@ func NewAddTask(db *sqlx.DB, window fyne.Window) *AddTask {
 			return data.NewTask(at.db, rowid), nil
 		},
 		database.Task{},
-	)
+	)}
 	at.taskInfo = NewTaskInfo(at.task)
 
 	at.container = container.NewStack(at.taskInfo)
