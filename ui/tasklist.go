@@ -77,7 +77,6 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 			return db.QueryRowx(`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+` ORDER BY id ASC LIMIT 1 OFFSET ?`, tl.uiTime.Unix(), index)
 		}
 	}, func() *sql.Row {
-		log.Printf(`SELECT * FROM tasks ` + notDoneJoinWhere + queryWhere + ` AND ` + deadlineWhere)
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
 			return db.QueryRow(`SELECT COUNT(*) FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+``, query2, query2, tl.uiTime.Unix())
@@ -113,7 +112,6 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 			return
 		}
 		rowid := row.(*data.Row2[database.Task]).Rowid
-		log.Printf("select rowid=%d", rowid)
 		err = tl.SelectedTaskID.Set(rowid)
 		if err != nil {
 			log.Printf("failed to get row: %s", err)
