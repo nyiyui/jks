@@ -85,14 +85,6 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 			)
 		}
 	}, func(index int) *sqlx.Row {
-		log.Printf("\n\n\n")
-		log.Printf(
-			`SELECT * FROM (` +
-				`SELECT tasks.* FROM tasks ` + notDoneJoinWhere + ` AND ` + deadlineWhere +
-				` UNION ALL ` +
-				`SELECT * FROM tasks ` + unionNoLogs + ` AND ` + deadlineWhere +
-				`) ORDER BY id ASC LIMIT 1 OFFSET ?`,
-		)
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
 			return db.QueryRowx(
@@ -116,7 +108,6 @@ func NewTaskList(db *sqlx.DB) (*TaskList, error) {
 			)
 		}
 	}, func() *sql.Row {
-		log.Printf(`SELECT * FROM tasks ` + notDoneJoinWhere + ` AND ` + deadlineWhere + ``)
 		if query, _ := tl.SearchQuery.Get(); query != "" {
 			query2 := "%" + query + "%"
 			return db.QueryRow(
