@@ -42,7 +42,7 @@ func main() {
 	}
 	log.Printf("database ready.")
 
-	s, err := server.New(db)
+	s, err := server.New(&database.Database{db})
 	if err != nil {
 		panic(err)
 	}

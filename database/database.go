@@ -1,8 +1,10 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"embed"
+	"fmt"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -100,7 +102,7 @@ func (s Status) String() string {
 
 var _ storage.Storage = (*Database)(nil)
 
-func (d *Database) ActivityAdd(a storage.Activity) error {
+func (d *Database) ActivityAdd(a storage.Activity, ctx context.Context) error {
 	status := StatusInProgress
 	if a.Done {
 		status = StatusDone
@@ -113,6 +115,50 @@ func (d *Database) ActivityAdd(a storage.Activity) error {
 		a.TimeEnd.Unix(),
 		status,
 		a.Note,
+	)
+	return err
+}
+
+func (d *Database) ActivityLatest(ctx context.Context) (storage.Activity, error) {
+	var a Activity
+	err := d.DB.Get(&a, `SELECT * FROM activity_log ORDER BY time_end DESC LIMIT 1 OFFSET 0`)
+	if err != nil {
+		return storage.Activity{}, fmt.Errorf("select: %w", err)
+	}
+	done := false
+	if a.Status == StatusDone {
+		done = true
+	}
+	return storage.Activity{
+		ID:        a.ID,
+		TaskID:    a.TaskID,
+		TimeStart: a.TimeStart,
+		TimeEnd:   a.TimeEnd,
+		Done:      done,
+		Note:      a.Note,
+	}, nil
+}
+
+func (d *Database) ActivityEdit(a storage.Activity, ctx context.Context) error {
+	var orig Activity
+	err := d.DB.Get(&orig, `SELECT * FROM activity_log WHERE id = ?`, a.ID)
+	if err != nil {
+		return fmt.Errorf("finding original: %w", err)
+	}
+	var status Status
+	if a.Done {
+		status = StatusDone
+	} else {
+		status = orig.Status
+	}
+	_, err = d.DB.Exec(`UPDATE activity_log SET task_id = ?, location = ?, time_start = ?, time_end = ?, status = ?, note = ? WHERE id = ?`,
+		a.TaskID,
+		a.Location,
+		a.TimeStart.Unix(),
+		a.TimeEnd.Unix(),
+		status,
+		a.Note,
+		a.ID,
 	)
 	return err
 }

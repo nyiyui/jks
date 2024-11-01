@@ -1,1 +1,1 @@
-ALTER TABLE activity_log ADD COLUMN note TEXT;
+ALTER TABLE activity_log ADD COLUMN note TEXT NOT NULL DEFAULT '';

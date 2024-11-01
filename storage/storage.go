@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"time"
 )
 
@@ -15,5 +16,7 @@ type Activity struct {
 }
 
 type Storage interface {
-	ActivityAdd(a Activity) error
+	ActivityAdd(a Activity, ctx context.Context) error
+	ActivityLatest(ctx context.Context) (Activity, error)
+	ActivityEdit(a Activity, ctx context.Context) error
 }
