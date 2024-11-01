@@ -11,6 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"nyiyui.ca/jks/storage"
 )
 
 //go:embed migrations
@@ -72,6 +73,7 @@ type Activity struct {
 	TimeStart time.Time `db:"time_start"`
 	TimeEnd   time.Time `db:"time_end"`
 	Status    Status
+	Note      string
 }
 
 func (a Activity) GetID() int64 { return a.ID }
@@ -94,4 +96,23 @@ var StatusNames = [...]string{
 
 func (s Status) String() string {
 	return StatusNames[s]
+}
+
+var _ storage.Storage = (*Database)(nil)
+
+func (d *Database) ActivityAdd(a storage.Activity) error {
+	status := StatusInProgress
+	if a.Done {
+		status = StatusDone
+	}
+	_, err := d.DB.Exec(`INSERT INTO activity_log (id, task_id, location, time_start, time_end, status, note) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		a.ID,
+		a.TaskID,
+		a.Location,
+		a.TimeStart.Unix(),
+		a.TimeEnd.Unix(),
+		status,
+		a.Note,
+	)
+	return err
 }

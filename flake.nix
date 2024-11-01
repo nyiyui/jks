@@ -26,6 +26,7 @@
             nixfmt-rfc-style
             sqlite
             sqlitebrowser
+            flutter
           ];
           nativeBuildInputs = with pkgs; [
             pkg-config
