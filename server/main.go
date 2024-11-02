@@ -2,8 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/google/safehtml/template"
 
@@ -32,6 +35,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) setup() {
 	s.mux.HandleFunc("POST /activity/new", s.activityNew)
 	s.mux.HandleFunc("GET /activity/latest", s.activityLatest)
+	s.mux.HandleFunc("POST /activity/{id}/extend", s.activityExtend)
 	s.parseTemplates()
 }
 
@@ -56,15 +60,27 @@ func (s *Server) activityNew(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) activityLatest(w http.ResponseWriter, r *http.Request) {
-	a, err := s.st.ActivityLatest(r.Context())
+	as, err := s.st.ActivityLatestN(r.Context(), 3)
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)
 		return
 	}
-	log.Printf("got: %s", a)
+	ts := make([]storage.Task, len(as))
+	for i, a := range as {
+		t, err := s.st.TaskGet(a.TaskID, r.Context())
+		if err != nil {
+			log.Printf("storage: %s", err)
+			http.Error(w, "storage error", 500)
+			return
+		}
+		ts[i] = t
+	}
+	log.Printf("got: %s", as)
+
 	err = s.tp.ExecuteTemplate(w, "activity-latest.html", map[string]interface{}{
-		"latest": a,
+		"latest": as,
+		"tasks":  ts,
 	})
 	if err != nil {
 		log.Printf("template: %s", err)
@@ -72,4 +88,39 @@ func (s *Server) activityLatest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	return
+}
+
+func (s *Server) activityExtend(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), 400)
+		return
+	}
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	timeEndRaw, err := time.ParseInLocation("15:04", r.FormValue("time_end"), time.Local)
+	if err != nil {
+		http.Error(w, "time_end must be in form 15:04", 422)
+		return
+	}
+	now := time.Now()
+	timeEnd := time.Date(now.Year(), now.Month(), now.Day(), timeEndRaw.Hour(), timeEndRaw.Minute(), 0, 0, time.Local)
+	log.Printf("time end: %s", timeEnd)
+	a, err := s.st.ActivityGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	a.TimeEnd = timeEnd
+	err = s.st.ActivityEdit(a, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	http.Error(w, "done", 200)
 }

@@ -1,1 +1,32 @@
-latest activity is: {{ .latest }}
+{{ template "base.html" $ }}
+{{ define "body" }}
+<ol>
+{{ range $i, $a := .latest }}
+  <li>
+    {{ if eq "" $a.Note }}
+    {{ $task := index $.tasks $i }}
+    {{ $task.QuickTitle }}
+    {{ else }}
+    {{ $a.Note }}
+    {{ end }}
+    on {{ $a.TimeStart.Local.Format "2006-01-02 Mon" }}
+    from {{ $a.TimeStart.Local.Format "15:04" }}
+    to {{ $a.TimeEnd.Local.Format "15:04" }}
+    {{ if ne "" $a.Location }}
+    at {{ $a.Location }}
+    {{ end }}
+    {{ if eq $i 0 }}
+    {{ if ge $a.TimeEnd.Unix (sub now.Unix 86400) }}
+    <form action="/activity/{{ $a.ID }}/extend" method="post">
+      <label>
+        New End Time
+        <input type="time" name="time_end" value="{{ now.Format "15:04" }}" />
+      </label>
+      <input type="submit" value="Extend" />
+    </form>
+    {{ end }}
+    {{ end }}
+  </li>
+{{ end }}
+</ol>
+{{ end }}

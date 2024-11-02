@@ -119,24 +119,17 @@ func (d *Database) ActivityAdd(a storage.Activity, ctx context.Context) error {
 	return err
 }
 
-func (d *Database) ActivityLatest(ctx context.Context) (storage.Activity, error) {
-	var a Activity
-	err := d.DB.Get(&a, `SELECT * FROM activity_log ORDER BY time_end DESC LIMIT 1 OFFSET 0`)
+func (d *Database) ActivityLatestN(ctx context.Context, n int) ([]storage.Activity, error) {
+	var as []Activity
+	err := d.DB.Select(&as, `SELECT * FROM activity_log ORDER BY time_end DESC LIMIT ? OFFSET 0`, n)
 	if err != nil {
-		return storage.Activity{}, fmt.Errorf("select: %w", err)
+		return nil, fmt.Errorf("select: %w", err)
 	}
-	done := false
-	if a.Status == StatusDone {
-		done = true
+	sas := make([]storage.Activity, 0, len(as))
+	for _, a := range as {
+		sas = append(sas, activityToStorage(a))
 	}
-	return storage.Activity{
-		ID:        a.ID,
-		TaskID:    a.TaskID,
-		TimeStart: a.TimeStart,
-		TimeEnd:   a.TimeEnd,
-		Done:      done,
-		Note:      a.Note,
-	}, nil
+	return sas, nil
 }
 
 func (d *Database) ActivityEdit(a storage.Activity, ctx context.Context) error {
@@ -161,4 +154,44 @@ func (d *Database) ActivityEdit(a storage.Activity, ctx context.Context) error {
 		a.ID,
 	)
 	return err
+}
+
+func (d *Database) ActivityGet(id int64, ctx context.Context) (storage.Activity, error) {
+	var v Activity
+	err := d.DB.Get(&v, `SELECT * FROM activity_log WHERE id = ?`, id)
+	if err != nil {
+		return storage.Activity{}, fmt.Errorf("select: %w", err)
+	}
+	return activityToStorage(v), nil
+}
+
+func (d *Database) TaskGet(id int64, ctx context.Context) (storage.Task, error) {
+	var t Task
+	err := d.DB.Get(&t, `SELECT * FROM tasks WHERE id = ?`, id)
+	if err != nil {
+		return storage.Task{}, fmt.Errorf("select: %w", err)
+	}
+	return storage.Task{
+		ID:          t.ID,
+		Description: t.Description,
+		QuickTitle:  t.QuickTitle,
+		Deadline:    t.Deadline,
+		Due:         t.Due,
+	}, nil
+}
+
+func activityToStorage(a Activity) storage.Activity {
+	done := false
+	if a.Status == StatusDone {
+		done = true
+	}
+	return storage.Activity{
+		ID:        a.ID,
+		TaskID:    a.TaskID,
+		Location:  a.Location,
+		TimeStart: a.TimeStart,
+		TimeEnd:   a.TimeEnd,
+		Done:      done,
+		Note:      a.Note,
+	}
 }
