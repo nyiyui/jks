@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/google/safehtml/template"
 
@@ -36,6 +35,7 @@ func (s *Server) setup() error {
 	s.mux.HandleFunc("POST /activity/new", s.activityNew)
 	s.mux.HandleFunc("GET /activity/latest", s.activityLatest)
 	s.mux.HandleFunc("POST /activity/{id}/extend", s.activityExtend)
+	s.mux.HandleFunc("POST /activity/{id}/resume", s.activityResume)
 	s.mux.HandleFunc("GET /activity/new-with-task", s.activityNewWithTask)
 	err := s.parseTemplates()
 	return err
@@ -62,7 +62,7 @@ func (s *Server) activityNew(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) activityLatest(w http.ResponseWriter, r *http.Request) {
-	as, err := s.st.ActivityLatestN(r.Context(), 3)
+	as, err := s.st.ActivityLatestN(r.Context(), 7)
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)
@@ -102,14 +102,11 @@ func (s *Server) activityExtend(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "id must be int", 422)
 		return
 	}
-	timeEndRaw, err := time.ParseInLocation("15:04", r.FormValue("time_end"), time.Local)
+	timeEnd, err := parseFormTime(r.FormValue("time_end"))
 	if err != nil {
-		http.Error(w, "time_end must be in form 15:04", 422)
+		http.Error(w, err.Error(), 422)
 		return
 	}
-	now := time.Now()
-	timeEnd := time.Date(now.Year(), now.Month(), now.Day(), timeEndRaw.Hour(), timeEndRaw.Minute(), 0, 0, time.Local)
-	log.Printf("time end: %s", timeEnd)
 	a, err := s.st.ActivityGet(id, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
@@ -118,6 +115,45 @@ func (s *Server) activityExtend(w http.ResponseWriter, r *http.Request) {
 	}
 	a.TimeEnd = timeEnd
 	err = s.st.ActivityEdit(a, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	http.Redirect(w, r, "/activity/latest", 302)
+}
+
+func (s *Server) activityResume(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, fmt.Sprint(err), 400)
+		return
+	}
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	timeEnd, err := parseFormTime(r.FormValue("time_end"))
+	if err != nil {
+		http.Error(w, err.Error(), 422)
+		return
+	}
+	timeStart, err := parseFormTime(r.FormValue("time_start"))
+	if err != nil {
+		http.Error(w, err.Error(), 422)
+		return
+	}
+	a, err := s.st.ActivityGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	a.ID = 0
+	a.TimeStart = timeStart
+	a.TimeEnd = timeEnd
+	err = s.st.ActivityAdd(a, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)

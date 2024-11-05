@@ -31,14 +31,26 @@
       {{ end }}
     </td>
     <td>
-      {{ if eq $i 0 }}
       {{ if ge $a.TimeEnd.Unix (sub now.Unix 86400) }}
+      {{ if eq $i 0 }}
       <form action="/activity/{{ $a.ID }}/extend" method="post">
         <label>
-          New End Time
+          New End
           <input type="time" name="time_end" value="{{ now.Format "15:04" }}" />
         </label>
         <input type="submit" value="Extend" />
+      </form>
+      {{ else }}
+      <form action="/activity/{{ $a.ID }}/resume" method="post">
+        <label>
+          Start
+          <input type="time" name="time_start" value="{{ now.Format "15:04" }}" />
+        </label>
+        <label>
+          End
+          <input type="time" name="time_end" value="{{ now.Format "15:04" }}" />
+        </label>
+        <input type="submit" value="Duplicate" />
       </form>
       {{ end }}
       {{ end }}
