@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <style>
+      form {
+        display: table;
+      }
+      form > * {
+        display: table-row;
+      }
+      form > input[type=submit] {
+        float: right;
+      }
+    </style>
   </head>
   <body>
     {{ template "body" $ }}

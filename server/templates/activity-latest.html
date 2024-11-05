@@ -26,9 +26,7 @@
       {{ $a.TimeEnd.Local.Format "15:04" }}
     </td>
     <td>
-      {{ if ne "" $a.Location }}
       {{ $a.Location }}
-      {{ end }}
     </td>
     <td>
       {{ if ge $a.TimeEnd.Unix (sub now.Unix 86400) }}
@@ -41,7 +39,11 @@
         <input type="submit" value="Extend" />
       </form>
       {{ else }}
-      <form action="/activity/{{ $a.ID }}/resume" method="post">
+      <form action="/activity/{{ $a.ID }}/resume" method="post" style="display: block;">
+        <label>
+          Location
+          <input type="text" name="location" value="{{ $a.Location }}" />
+        </label>
         <label>
           Start
           <input type="time" name="time_start" value="{{ now.Format "15:04" }}" />

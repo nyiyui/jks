@@ -134,6 +134,7 @@ func (s *Server) activityResume(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "id must be int", 422)
 		return
 	}
+	location := r.FormValue("location")
 	timeEnd, err := parseFormTime(r.FormValue("time_end"))
 	if err != nil {
 		http.Error(w, err.Error(), 422)
@@ -153,6 +154,7 @@ func (s *Server) activityResume(w http.ResponseWriter, r *http.Request) {
 	a.ID = 0
 	a.TimeStart = timeStart
 	a.TimeEnd = timeEnd
+	a.Location = location
 	err = s.st.ActivityAdd(a, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
