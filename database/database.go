@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"time"
 
@@ -107,8 +108,7 @@ func (d *Database) ActivityAdd(a storage.Activity, ctx context.Context) error {
 	if a.Done {
 		status = StatusDone
 	}
-	_, err := d.DB.Exec(`INSERT INTO activity_log (id, task_id, location, time_start, time_end, status, note) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		a.ID,
+	_, err := d.DB.Exec(`INSERT INTO activity_log (task_id, location, time_start, time_end, status, note) VALUES (?, ?, ?, ?, ?, ?)`,
 		a.TaskID,
 		a.Location,
 		a.TimeStart.Unix(),
@@ -194,4 +194,18 @@ func activityToStorage(a Activity) storage.Activity {
 		Done:      done,
 		Note:      a.Note,
 	}
+}
+
+func (d *Database) TaskSearch(query string, ctx context.Context) (storage.Window[storage.Task], error) {
+	return nil, errors.New("not implemented")
+}
+
+func (d *Database) TaskAdd(v storage.Task, ctx context.Context) error {
+	_, err := d.DB.Exec(`INSERT INTO tasks (description, quick_title, deadline, due) VALUES (?, ?, ?, ?)`,
+		v.Description,
+		v.QuickTitle,
+		v.Deadline,
+		v.Due,
+	)
+	return err
 }

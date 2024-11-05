@@ -1,32 +1,49 @@
 {{ template "base.html" $ }}
 {{ define "body" }}
-<ol>
+<table>
+  <tr>
+    <th>Quick Title / Note</th>
+    <th>Start</th>
+    <th>End</th>
+    <th>Location</th>
+    <th>Actions</th>
+  </tr>
 {{ range $i, $a := .latest }}
-  <li>
-    {{ if eq "" $a.Note }}
-    {{ $task := index $.tasks $i }}
-    {{ $task.QuickTitle }}
-    {{ else }}
-    {{ $a.Note }}
-    {{ end }}
-    on {{ $a.TimeStart.Local.Format "2006-01-02 Mon" }}
-    from {{ $a.TimeStart.Local.Format "15:04" }}
-    to {{ $a.TimeEnd.Local.Format "15:04" }}
-    {{ if ne "" $a.Location }}
-    at {{ $a.Location }}
-    {{ end }}
-    {{ if eq $i 0 }}
-    {{ if ge $a.TimeEnd.Unix (sub now.Unix 86400) }}
-    <form action="/activity/{{ $a.ID }}/extend" method="post">
-      <label>
-        New End Time
-        <input type="time" name="time_end" value="{{ now.Format "15:04" }}" />
-      </label>
-      <input type="submit" value="Extend" />
-    </form>
-    {{ end }}
-    {{ end }}
-  </li>
+  <tr>
+    <td>
+      {{ if eq "" $a.Note }}
+      {{ $task := index $.tasks $i }}
+      {{ $task.QuickTitle }}
+      {{ else }}
+      {{ $a.Note }}
+      {{ end }}
+    </td>
+    <td>
+      {{ $a.TimeStart.Local.Format "2006-01-02 Mon" }}
+      {{ $a.TimeStart.Local.Format "15:04" }}
+    </td>
+    <td>
+      {{ $a.TimeEnd.Local.Format "15:04" }}
+    </td>
+    <td>
+      {{ if ne "" $a.Location }}
+      {{ $a.Location }}
+      {{ end }}
+    </td>
+    <td>
+      {{ if eq $i 0 }}
+      {{ if ge $a.TimeEnd.Unix (sub now.Unix 86400) }}
+      <form action="/activity/{{ $a.ID }}/extend" method="post">
+        <label>
+          New End Time
+          <input type="time" name="time_end" value="{{ now.Format "15:04" }}" />
+        </label>
+        <input type="submit" value="Extend" />
+      </form>
+      {{ end }}
+      {{ end }}
+    </td>
+  </tr>
 {{ end }}
-</ol>
+</table>
 {{ end }}

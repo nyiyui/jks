@@ -1,0 +1,48 @@
+{{ template "base.html" $ }}
+{{ define "body" }}
+<form action="/activity/new-with-task" method="post">
+  <fieldset>
+    <legend>Task</legend>
+    <label>
+      Quick Title
+      <input type="text" name="QuickTitle" />
+    </label>
+    <label>
+      Description
+      <textarea name="Description"></textarea>
+    </label>
+    <label>
+      Deadline
+      <input type="datetime-local" name="Deadline" />
+    </label>
+    <label>
+      Due
+      <input type="datetime-local" name="Due" />
+    </label>
+  </fieldset>
+  <fieldset>
+    <legend>Activity</legend>
+    <label>
+      Location
+      <input type="text" name="Location" />
+    </label>
+    <label>
+      Start
+      <input type="datetime-local" name="TimeStart" />
+    </label>
+    <label>
+      End
+      <input type="datetime-local" name="TimeEnd" />
+    </label>
+    <label>
+      <input type="checkbox" name="Done" />
+      Task is done with this activity
+    </label>
+    <label>
+      Note
+      <textarea name="Note"></textarea>
+    </label>
+  </fieldset>
+  <input type="submit" value="Add" />
+</form>
+{{ end }}

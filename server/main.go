@@ -16,7 +16,7 @@ import (
 type Server struct {
 	mux *http.ServeMux
 	st  storage.Storage
-	tp  *template.Template
+	tps map[string]*template.Template
 }
 
 func New(st storage.Storage) (*Server, error) {
@@ -24,19 +24,21 @@ func New(st storage.Storage) (*Server, error) {
 		mux: http.NewServeMux(),
 		st:  st,
 	}
-	s.setup()
-	return s, nil
+	err := s.setup()
+	return s, err
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func (s *Server) setup() {
+func (s *Server) setup() error {
 	s.mux.HandleFunc("POST /activity/new", s.activityNew)
 	s.mux.HandleFunc("GET /activity/latest", s.activityLatest)
 	s.mux.HandleFunc("POST /activity/{id}/extend", s.activityExtend)
-	s.parseTemplates()
+	s.mux.HandleFunc("GET /activity/new-with-task", s.activityNewWithTask)
+	err := s.parseTemplates()
+	return err
 }
 
 type ActivityNewQ struct {
@@ -76,9 +78,8 @@ func (s *Server) activityLatest(w http.ResponseWriter, r *http.Request) {
 		}
 		ts[i] = t
 	}
-	log.Printf("got: %s", as)
 
-	err = s.tp.ExecuteTemplate(w, "activity-latest.html", map[string]interface{}{
+	err = s.tps["activity-latest.html"].Execute(w, map[string]interface{}{
 		"latest": as,
 		"tasks":  ts,
 	})
@@ -122,5 +123,15 @@ func (s *Server) activityExtend(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	http.Error(w, "done", 200)
+	http.Redirect(w, r, "/activity/latest", 302)
+}
+
+func (s *Server) activityNewWithTask(w http.ResponseWriter, r *http.Request) {
+	err := s.tps["activity-new-with-task.html"].Execute(w, map[string]interface{}{})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
+		return
+	}
+	return
 }

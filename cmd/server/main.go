@@ -46,5 +46,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	http.ListenAndServe("127.0.0.1:8080", s)
+	panic(http.ListenAndServe("127.0.0.1:8080", s))
 }
