@@ -1,4 +1,7 @@
 {{ template "base.html" $ }}
+{{ define "title" }}
+Latest
+{{ end }}
 {{ define "body" }}
 <table>
   <tr>
@@ -11,12 +14,18 @@
 {{ range $i, $a := .latest }}
   <tr>
     <td>
-      {{ if eq "" $a.Note }}
+      <a href="/activity/{{ $a.ID }}">
+        {{ if eq "" $a.Note }}
+        Activity
+        {{ else }}
+        {{ $a.Note }}
+        {{ end }}
+      </a>
+      for 
       {{ $task := index $.tasks $i }}
-      {{ $task.QuickTitle }}
-      {{ else }}
-      {{ $a.Note }}
-      {{ end }}
+      <a href="/task/{{ $task.ID }}">
+        {{ $task.QuickTitle }}
+      </a>
     </td>
     <td>
       {{ $a.TimeStart.Local.Format "2006-01-02 Mon" }}
@@ -38,7 +47,7 @@
         </label>
         <input type="submit" value="Extend" />
       </form>
-      {{ else }}
+      {{ end }}
       <form action="/activity/{{ $a.ID }}/resume" method="post" style="display: block;">
         <label>
           Location
@@ -54,7 +63,6 @@
         </label>
         <input type="submit" value="Duplicate" />
       </form>
-      {{ end }}
       {{ end }}
     </td>
   </tr>

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/google/safehtml/template"
 
@@ -32,6 +33,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) setup() error {
+	s.mux.HandleFunc("GET /activity/{id}", s.activityView)
+	s.mux.HandleFunc("GET /task/{id}", s.taskView)
 	s.mux.HandleFunc("POST /activity/new", s.activityNew)
 	s.mux.HandleFunc("GET /activity/latest", s.activityLatest)
 	s.mux.HandleFunc("POST /activity/{id}/extend", s.activityExtend)
@@ -39,6 +42,82 @@ func (s *Server) setup() error {
 	s.mux.HandleFunc("GET /activity/new-with-task", s.activityNewWithTask)
 	err := s.parseTemplates()
 	return err
+}
+
+func (s *Server) activityView(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	a, err := s.st.ActivityGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	t, err := s.st.TaskGet(a.TaskID, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	err = s.tps["activity.html"].Execute(w, map[string]interface{}{
+		"activity": a,
+		"task":     t,
+	})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
+		return
+	}
+	return
+}
+
+func (s *Server) taskView(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	t, err := s.st.TaskGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	asw, err := s.st.TaskGetActivities(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	defer asw.Close()
+	as, err := asw.Get(100, 0)
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	if len(as) == 100 {
+		http.Error(w, "too many activities", 500)
+		return
+	}
+	var totalSpent time.Duration
+	for _, a := range as {
+		totalSpent += a.TimeEnd.Sub(a.TimeStart)
+	}
+	err = s.tps["task.html"].Execute(w, map[string]interface{}{
+		"task":       t,
+		"activities": as,
+		"totalSpent": totalSpent,
+	})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
+		return
+	}
+	return
 }
 
 type ActivityNewQ struct {

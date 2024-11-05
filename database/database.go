@@ -180,6 +180,41 @@ func (d *Database) TaskGet(id int64, ctx context.Context) (storage.Task, error) 
 	}, nil
 }
 
+func (d *Database) TaskGetActivities(id int64, ctx context.Context) (storage.Window[storage.Activity], error) {
+	return &window{d, id}, nil
+}
+
+type window struct {
+	d  *Database
+	id int64
+}
+
+func (w *window) Get(limit, offset int) ([]storage.Activity, error) {
+	ts := make([]Activity, limit)
+	err := w.d.DB.Select(&ts, `SELECT * FROM activity_log WHERE task_id = ?`, w.id)
+	if err != nil {
+		return nil, fmt.Errorf("select: %w", err)
+	}
+	ts2 := make([]storage.Activity, len(ts))
+	for i := range ts {
+		ts2[i] = activityToStorage(ts[i])
+	}
+	return ts2, nil
+}
+
+func (w *window) Close() error {
+	return nil
+}
+
+func taskToStorage(t Task) storage.Task {
+	return storage.Task{
+		ID:          t.ID,
+		Description: t.Description,
+		QuickTitle:  t.QuickTitle,
+		Deadline:    t.Deadline,
+		Due:         t.Due,
+	}
+}
 func activityToStorage(a Activity) storage.Activity {
 	done := false
 	if a.Status == StatusDone {

@@ -1,0 +1,15 @@
+{{ template "base.html" $ }}
+{{ define "title" }}
+{{ if eq "" .activity.Note }}
+Activity for {{ .task.QuickTitle }}
+{{ else }}
+{{ .activity.Note }}
+{{ end }}
+{{ end }}
+{{ define "body" }}
+<h1>{{ template "title" . }}</h1>
+<pre>
+{{ toPrettyJson . }}
+</pre>
+{{ end }}
+

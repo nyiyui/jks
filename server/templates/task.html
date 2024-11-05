@@ -1,0 +1,12 @@
+{{ template "base.html" $ }}
+{{ define "title" }}
+{{ .task.QuickTitle }}
+{{ end }}
+{{ define "body" }}
+<h1>{{ template "title" . }}</h1>
+Spent: {{ .totalSpent }}
+<pre>
+{{ toPrettyJson . }}
+</pre>
+{{ end }}
+
