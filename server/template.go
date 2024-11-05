@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/google/safehtml"
 	"github.com/google/safehtml/template"
 )
 
@@ -26,7 +27,22 @@ func (s *Server) parseTemplates() error {
 
 func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 	t := template.New(basename).
-		Funcs(template.FuncMap(sprig.FuncMap()))
+		Funcs(template.FuncMap(sprig.FuncMap())).
+		Funcs(template.FuncMap{
+			"styleTopHeight": func(top, height string) safehtml.Style {
+				return safehtml.StyleFromProperties(safehtml.StyleProperties{
+					Top:    top,
+					Height: height,
+				})
+			},
+			"genRange": func(count uint) []uint {
+				items := make([]uint, count)
+				for i := uint(0); i < count; i++ {
+					items[i] = i
+				}
+				return items
+			},
+		})
 	t, err := t.ParseGlob("server/layouts/*.html")
 	if err != nil {
 		return nil, err

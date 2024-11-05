@@ -15,6 +15,7 @@
     <title>
       {{ template "title" $ }}
     </title>
+    {{ block "head-extra" $ }}{{ end }}
   </head>
   <body>
     {{ template "body" $ }}

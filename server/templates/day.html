@@ -1,0 +1,65 @@
+{{ template "base.html" $ }}
+{{ define "title" }}
+{{ .date.Format "2006-01-02" }}
+{{ end }}
+{{ define "head-extra" }}
+<style>
+  .activity {
+    /* border-left: 2px black solid; */
+    position: relative;
+    z-index: 1;
+    background-color: #eee;
+    border-radius: 8px;
+  }
+
+  .hour {
+    border-top: 2px black dotted;
+    position: relative;
+    z-index: 0;
+  }
+
+  .layer {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  main {
+    height: 100%;
+    display: grid;
+  }
+</style>
+{{ end }}
+{{ define "body" }}
+{{ $compressionFactor := 60 }}
+<h1>{{ template "title" . }}</h1>
+<main>
+  <div class="layer">
+    {{ range $i := genRange 24 }}
+    <div class="hour" style="{{ styleTopHeight "0" "60px" }}">
+      {{ printf "%02d:00" $i }}
+    </div>
+    {{ end }}
+  </div>
+  <div class="layer">
+    {{ range $i, $activity := .activities }}
+    {{ $top := (div (sub $activity.TimeStart.Unix $.date.Unix) $compressionFactor) }}
+    {{ $height := (div (sub $activity.TimeEnd.Unix $activity.TimeStart.Unix) $compressionFactor) }}
+    {{ $duration := $activity.TimeEnd.Sub $activity.TimeStart }}
+    <div
+      class="activity"
+      style="{{ styleTopHeight (printf "%dpx" $top) (printf "%dpx" $height) }}"
+    >
+      {{ $duration }}
+      <a href="/activity/{{ $activity.ID }}">
+        {{ if eq "" $activity.Note }}
+        Activity for {{ (index $.tasks $i).QuickTitle }}
+        {{ else }}
+        {{ $activity.Note }}
+        {{ end }}
+      </a>
+    </div>
+    {{ end }}
+  </div>
+</main>
+{{ end }}
+

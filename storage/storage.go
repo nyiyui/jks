@@ -32,6 +32,7 @@ type Storage interface {
 	ActivityAdd(a Activity, ctx context.Context) error
 	ActivityLatestN(ctx context.Context, n int) ([]Activity, error)
 	ActivityGet(id int64, ctx context.Context) (Activity, error)
+	ActivityRange(a, b time.Time, ctx context.Context) (Window[Activity], error)
 	ActivityEdit(a Activity, ctx context.Context) error
 	TaskGet(id int64, ctx context.Context) (Task, error)
 	TaskGetActivities(id int64, ctx context.Context) (Window[Activity], error)

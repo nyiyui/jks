@@ -40,6 +40,8 @@ func (s *Server) setup() error {
 	s.mux.HandleFunc("POST /activity/{id}/extend", s.activityExtend)
 	s.mux.HandleFunc("POST /activity/{id}/resume", s.activityResume)
 	s.mux.HandleFunc("GET /activity/new-with-task", s.activityNewWithTask)
+	s.mux.HandleFunc("GET /day/{date}", s.dayView)
+	s.mux.HandleFunc("GET /day/today", s.dayViewToday)
 	err := s.parseTemplates()
 	return err
 }
@@ -251,4 +253,56 @@ func (s *Server) activityNewWithTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	return
+}
+
+func (s *Server) dayView(w http.ResponseWriter, r *http.Request) {
+	date, err := time.ParseInLocation("2006-01-02", r.PathValue("date"), time.Local)
+	if err != nil {
+		http.Error(w, "invalid date format", 422)
+		return
+	}
+	dateEnd := date.Add(24 * time.Hour)
+	asw, err := s.st.ActivityRange(date, dateEnd, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	defer asw.Close()
+	as, err := asw.Get(100, 0)
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	if len(as) == 100 {
+		http.Error(w, "too many activities", 500)
+		return
+	}
+	ts := make([]storage.Task, len(as))
+	for i, a := range as {
+		t, err := s.st.TaskGet(a.TaskID, r.Context())
+		if err != nil {
+			log.Printf("storage: %s", err)
+			http.Error(w, "storage error", 500)
+			return
+		}
+		ts[i] = t
+	}
+	err = s.tps["day.html"].Execute(w, map[string]interface{}{
+		"date":       date,
+		"activities": as,
+		"tasks":      ts,
+	})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
+		return
+	}
+	return
+}
+
+func (s *Server) dayViewToday(w http.ResponseWriter, r *http.Request) {
+	date := time.Now().Format("2006-01-02")
+	http.Redirect(w, r, fmt.Sprintf("/day/%s", date), 302)
 }

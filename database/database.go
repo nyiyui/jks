@@ -191,7 +191,7 @@ type window struct {
 
 func (w *window) Get(limit, offset int) ([]storage.Activity, error) {
 	ts := make([]Activity, limit)
-	err := w.d.DB.Select(&ts, `SELECT * FROM activity_log WHERE task_id = ?`, w.id)
+	err := w.d.DB.Select(&ts, `SELECT * FROM activity_log WHERE task_id = ? LIMIT ? OFFSET ?`, w.id, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("select: %w", err)
 	}
@@ -215,6 +215,7 @@ func taskToStorage(t Task) storage.Task {
 		Due:         t.Due,
 	}
 }
+
 func activityToStorage(a Activity) storage.Activity {
 	done := false
 	if a.Status == StatusDone {
@@ -243,4 +244,32 @@ func (d *Database) TaskAdd(v storage.Task, ctx context.Context) error {
 		v.Due,
 	)
 	return err
+}
+
+func (d *Database) ActivityRange(a, b time.Time, ctx context.Context) (storage.Window[storage.Activity], error) {
+	return &window2{d, a, b, ctx}, nil
+}
+
+type window2 struct {
+	d         *Database
+	timeStart time.Time
+	timeEnd   time.Time
+	ctx       context.Context
+}
+
+func (w *window2) Get(limit, offset int) ([]storage.Activity, error) {
+	ts := make([]Activity, limit)
+	err := w.d.DB.SelectContext(w.ctx, &ts, `SELECT * FROM activity_log WHERE time_start >= ? AND time_end < ? LIMIT ? OFFSET ?`, w.timeStart.Unix(), w.timeEnd.Unix(), limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("select: %w", err)
+	}
+	ts2 := make([]storage.Activity, len(ts))
+	for i := range ts {
+		ts2[i] = activityToStorage(ts[i])
+	}
+	return ts2, nil
+}
+
+func (w *window2) Close() error {
+	return nil
 }
