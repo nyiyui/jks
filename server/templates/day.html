@@ -14,10 +14,15 @@
   }
 
   .hour {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    height: 60px;
     border-top: 2px black dotted;
     position: relative;
     z-index: 0;
     font-variant-numeric: tabular-nums;
+    box-sizing: border-box;
   }
 
   .layer {
@@ -37,13 +42,13 @@
 <main>
   <div class="layer">
     {{ range $i := genRange 24 }}
-    <div class="hour" style="{{ styleTopHeight "0" "60px" }}">
+    <div class="hour">
       {{ printf "%02d:00" $i }}
     </div>
     {{ end }}
   </div>
+  {{ range $i, $activity := .activities }}
   <div class="layer">
-    {{ range $i, $activity := .activities }}
     {{ $top := (div (sub $activity.TimeStart.Unix $.date.Unix) $compressionFactor) }}
     {{ $height := (div (sub $activity.TimeEnd.Unix $activity.TimeStart.Unix) $compressionFactor) }}
     {{ $duration := $activity.TimeEnd.Sub $activity.TimeStart }}
@@ -51,6 +56,7 @@
       class="activity"
       style="{{ styleTopHeight (printf "%dpx" $top) (printf "%dpx" $height) }}"
     >
+      {{ $activity.TimeStart.Local.Format "15:04" }}
       {{ $duration }}
       <a href="/activity/{{ $activity.ID }}">
         {{ if eq "" $activity.Note }}
@@ -60,8 +66,8 @@
         {{ end }}
       </a>
     </div>
-    {{ end }}
   </div>
+  {{ end }}
 </main>
 {{ end }}
 
