@@ -1,0 +1,33 @@
+{{ template "base.html" $ }}
+{{ define "title" }}
+New Activity for {{ .task.QuickTitle }}
+{{ end }}
+{{ define "body" }}
+<h1>{{ template "title" . }}</h1>
+<form action="/task/{{ .task.ID }}/activity/new" method="post">
+  <label>
+    Location
+    <input type="text" name="Location" />
+  </label>
+  <label>
+    Start
+    <input type="datetime-local" name="TimeStart" />
+  </label>
+  <label>
+    End
+    <input type="datetime-local" name="TimeEnd" />
+  </label>
+  <label>
+    <input type="checkbox" name="Done" />
+    Task is done with this activity
+  </label>
+  <label>
+    Note
+    <textarea name="Note"></textarea>
+  </label>
+  <input type="submit" value="Add" />
+</form>
+<pre>
+{{ toPrettyJson . }}
+</pre>
+{{ end }}

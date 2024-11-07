@@ -29,7 +29,7 @@ type Activity struct {
 }
 
 type Storage interface {
-	ActivityAdd(a Activity, ctx context.Context) error
+	ActivityAdd(a Activity, ctx context.Context) (id int64, err error)
 	ActivityLatestN(ctx context.Context, n int) ([]Activity, error)
 	ActivityGet(id int64, ctx context.Context) (Activity, error)
 	ActivityRange(a, b time.Time, ctx context.Context) (Window[Activity], error)

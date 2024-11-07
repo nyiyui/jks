@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/schema"
 
 	"github.com/google/safehtml/template"
 
@@ -35,6 +38,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) setup() error {
 	s.mux.HandleFunc("GET /activity/{id}", s.activityView)
 	s.mux.HandleFunc("GET /task/{id}", s.taskView)
+	s.mux.HandleFunc("GET /task/{id}/activity/new", s.taskActivityNew)
+	s.mux.HandleFunc("POST /task/{id}/activity/new", s.taskActivityNewPost)
 	s.mux.HandleFunc("POST /activity/new", s.activityNew)
 	s.mux.HandleFunc("GET /activity/latest", s.activityLatest)
 	s.mux.HandleFunc("POST /activity/{id}/extend", s.activityExtend)
@@ -122,6 +127,71 @@ func (s *Server) taskView(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func (s *Server) taskActivityNew(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	t, err := s.st.TaskGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	err = s.tps["task-activity-new.html"].Execute(w, map[string]interface{}{
+		"task": t,
+	})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
+		return
+	}
+	return
+}
+
+func (s *Server) taskActivityNewPost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "parsing form data failed", 400)
+		return
+	}
+
+	var a storage.Activity
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	_, err = s.st.TaskGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	decoder := schema.NewDecoder()
+	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
+		t, err := time.Parse("2006-01-02T15:04", s)
+		if err != nil {
+			return reflect.ValueOf(time.Now())
+		}
+		return reflect.ValueOf(t)
+	})
+	err = decoder.Decode(&a, r.PostForm)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
+		return
+	}
+	a.TaskID = id
+	taskID, err := s.st.ActivityAdd(a, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/activity/%d", taskID), 302)
+}
+
 type ActivityNewQ struct {
 	Activity storage.Activity
 }
@@ -133,7 +203,7 @@ func (s *Server) activityNew(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "json decode failed", 422)
 		return
 	}
-	err = s.st.ActivityAdd(q.Activity, r.Context())
+	_, err = s.st.ActivityAdd(q.Activity, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)
@@ -236,7 +306,7 @@ func (s *Server) activityResume(w http.ResponseWriter, r *http.Request) {
 	a.TimeStart = timeStart
 	a.TimeEnd = timeEnd
 	a.Location = location
-	err = s.st.ActivityAdd(a, r.Context())
+	_, err = s.st.ActivityAdd(a, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)

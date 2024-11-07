@@ -4,7 +4,26 @@
 {{ end }}
 {{ define "body" }}
 <h1>{{ template "title" . }}</h1>
-Spent: {{ .totalSpent }}
+<aside>
+  Spent: {{ .totalSpent }}
+</aside>
+<section id="description">
+  {{ renderMarkdown .task.Description }}
+</section>
+<section id="activities">
+  <h2>Activities</h2>
+  <ol>
+    {{ range $i, $activity := .activities }}
+    <li><a href="/activity/{{ $activity.ID }}">
+      {{ if eq "" $activity.Note }}
+      Activity
+      {{ else }}
+      {{ $activity.Note }}
+      {{ end }}
+    </a></li>
+    {{ end }}
+  </ol>
+</section>
 <pre>
 {{ toPrettyJson . }}
 </pre>

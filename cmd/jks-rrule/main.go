@@ -1,18 +1,20 @@
 package main
 
 import (
+	"context"
 	"encoding"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/teambition/rrule-go"
 	"nyiyui.ca/jks/database"
+	"nyiyui.ca/jks/storage"
 )
 
 type Cache struct {
@@ -20,13 +22,13 @@ type Cache struct {
 }
 
 type RRules struct {
-	GenerateInterval time.Duration
+	GenerateInterval int
 	Tasks            map[string]Task
 }
 
 type Task struct {
 	RRuleSet *RRuleSet
-	Task     database.Task
+	Task     storage.Task
 }
 
 type RRuleSet rrule.Set
@@ -34,7 +36,7 @@ type RRuleSet rrule.Set
 func (r *RRuleSet) UnmarshalText(text []byte) error {
 	rs, err := rrule.StrToRRuleSet(string(text))
 	if err != nil {
-		return err
+		return fmt.Errorf("parse RRULE set: %s", err)
 	}
 	*r = RRuleSet(*rs)
 	return nil
@@ -73,6 +75,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer cacheRaw.Close()
 	var cache Cache
 	err = json.NewDecoder(cacheRaw).Decode(&cache)
 	if err != nil {
@@ -83,8 +86,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	var rrules RRules
-	err = toml.Unmarshal(rrulesRaw, &rrules)
+	var cfg RRules
+	err = toml.Unmarshal(rrulesRaw, &cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -100,12 +103,43 @@ func main() {
 		panic(err)
 	}
 	log.Printf("database ready.")
+
+	for name := range cfg.Tasks {
+		err := createForTask(name, &database.Database{db}, cfg, cache)
+		if err != nil {
+			panic(err)
+		}
+	}
+	cache.GenerateFrom = time.Now().Add(time.Duration(cfg.GenerateInterval) * time.Hour)
+	log.Printf("writing to cache...")
+	err = cacheRaw.Truncate(0)
+	if err != nil {
+		panic(err)
+	}
+	_, err = cacheRaw.Seek(0, 0)
+	if err != nil {
+		panic(err)
+	}
+	err = json.NewEncoder(cacheRaw).Encode(cache)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("wrote to cache.")
 }
 
-func createTasks(set *rrule.Set, db *sqlx.DB, cfg RRules, cache Cache) {
-	times := set.Between(cache.GenerateFrom, time.Now().Add(cfg.GenerateInterval), true)
+func createForTask(name string, st storage.Storage, cfg RRules, cache Cache) error {
+	taskCfg := cfg.Tasks[name]
+	set := (*rrule.Set)(taskCfg.RRuleSet)
+	times := set.Between(cache.GenerateFrom, time.Now().Add(time.Duration(cfg.GenerateInterval)*time.Hour), true)
 	for i, t := range times {
-		log.Printf("[%d] generated task at %s.", i, t)
-		db.Exec(`INSERT INTO tasks (id, description, quick_title, deadline, due) 
+		log.Printf("[%s.%d] generated task at %s.", name, i, t)
+		task := taskCfg.Task
+		task.Due = &t
+		task.Deadline = &t
+		err := st.TaskAdd(task, context.Background())
+		if err != nil {
+			return fmt.Errorf("add for %s: %w", t, err)
+		}
 	}
+	return nil
 }

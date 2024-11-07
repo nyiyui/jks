@@ -1,12 +1,15 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/google/safehtml"
 	"github.com/google/safehtml/template"
+	"github.com/google/safehtml/uncheckedconversions"
+	"github.com/yuin/goldmark"
 )
 
 func (s *Server) parseTemplates() error {
@@ -41,6 +44,14 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 					items[i] = i
 				}
 				return items
+			},
+			"renderMarkdown": func(s string) (safehtml.HTML, error) {
+				var buf bytes.Buffer
+				err := goldmark.Convert([]byte(s), &buf)
+				if err != nil {
+					return safehtml.HTML{}, err
+				}
+				return uncheckedconversions.HTMLFromStringKnownToSatisfyTypeContract(buf.String()), nil
 			},
 		})
 	t, err := t.ParseGlob("server/layouts/*.html")

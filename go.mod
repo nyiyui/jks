@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/google/safehtml v0.1.0
+	github.com/gorilla/schema v1.4.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/pelletier/go-toml/v2 v2.2.3

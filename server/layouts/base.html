@@ -13,11 +13,15 @@
       }
     </style>
     <title>
-      {{ template "title" $ }}
+      {{ block "title" $ }}{{ end }}
     </title>
     {{ block "head-extra" $ }}{{ end }}
   </head>
   <body>
+    <nav>
+      <a href="/activity/latest">Latest</a>
+      <a href="/day/today">Today</a>
+    </nav>
     {{ template "body" $ }}
   </body>
 </html>

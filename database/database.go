@@ -103,12 +103,12 @@ func (s Status) String() string {
 
 var _ storage.Storage = (*Database)(nil)
 
-func (d *Database) ActivityAdd(a storage.Activity, ctx context.Context) error {
+func (d *Database) ActivityAdd(a storage.Activity, ctx context.Context) (id int64, err error) {
 	status := StatusInProgress
 	if a.Done {
 		status = StatusDone
 	}
-	_, err := d.DB.Exec(`INSERT INTO activity_log (task_id, location, time_start, time_end, status, note) VALUES (?, ?, ?, ?, ?, ?)`,
+	res, err := d.DB.Exec(`INSERT INTO activity_log (task_id, location, time_start, time_end, status, note) VALUES (?, ?, ?, ?, ?, ?)`,
 		a.TaskID,
 		a.Location,
 		a.TimeStart.Unix(),
@@ -116,7 +116,10 @@ func (d *Database) ActivityAdd(a storage.Activity, ctx context.Context) error {
 		status,
 		a.Note,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
 }
 
 func (d *Database) ActivityLatestN(ctx context.Context, n int) ([]storage.Activity, error) {

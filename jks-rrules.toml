@@ -1,0 +1,8 @@
+GenerateInterval = 48
+
+[Tasks.Shower]
+RRuleSet = """
+DTSTART:20241106T045900Z
+RRULE:FREQ=DAILY;UNTIL=20241214T045900Z
+"""
+Task.QuickTitle = "シャワー"
