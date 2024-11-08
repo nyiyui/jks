@@ -1,4 +1,4 @@
-GenerateInterval = 48
+GenerateInterval = 72
 
 [Tasks.Shower]
 RRuleSet = """
@@ -6,3 +6,14 @@ DTSTART:20241106T045900Z
 RRULE:FREQ=DAILY;UNTIL=20241214T045900Z
 """
 Task.QuickTitle = "シャワー"
+
+[Tasks.JAPN4113]
+DryRun = true
+RRuleSet = """
+DTSTART:20241107T145512Z
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20241203T045900Z
+"""
+Task.QuickTitle = "JAPN4113"
+Task.Description = """
+[Canvas](https://gatech.instructure.com/courses/410760)
+"""

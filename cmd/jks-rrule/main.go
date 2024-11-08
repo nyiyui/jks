@@ -29,6 +29,7 @@ type RRules struct {
 type Task struct {
 	RRuleSet *RRuleSet
 	Task     storage.Task
+	DryRun   bool
 }
 
 type RRuleSet rrule.Set
@@ -104,13 +105,14 @@ func main() {
 	}
 	log.Printf("database ready.")
 
+	generateTo := time.Now().Add(time.Duration(cfg.GenerateInterval) * time.Hour)
 	for name := range cfg.Tasks {
-		err := createForTask(name, &database.Database{db}, cfg, cache)
+		err := createForTask(name, &database.Database{db}, cfg, cache, cache.GenerateFrom, generateTo)
 		if err != nil {
 			panic(err)
 		}
 	}
-	cache.GenerateFrom = time.Now().Add(time.Duration(cfg.GenerateInterval) * time.Hour)
+	cache.GenerateFrom = generateTo
 	log.Printf("writing to cache...")
 	err = cacheRaw.Truncate(0)
 	if err != nil {
@@ -127,11 +129,17 @@ func main() {
 	log.Printf("wrote to cache.")
 }
 
-func createForTask(name string, st storage.Storage, cfg RRules, cache Cache) error {
+func createForTask(name string, st storage.Storage, cfg RRules, cache Cache, generateFrom, generateTo time.Time) error {
+	log.Printf("createForTask %s - %s → %s", name,
+		generateFrom, generateTo)
 	taskCfg := cfg.Tasks[name]
 	set := (*rrule.Set)(taskCfg.RRuleSet)
-	times := set.Between(cache.GenerateFrom, time.Now().Add(time.Duration(cfg.GenerateInterval)*time.Hour), true)
+	times := set.Between(generateFrom, generateTo, true)
 	for i, t := range times {
+		if taskCfg.DryRun {
+			log.Printf("[%s.%d] dry run for task at %s.", name, i, t)
+			continue
+		}
 		log.Printf("[%s.%d] generated task at %s.", name, i, t)
 		task := taskCfg.Task
 		task.Due = &t

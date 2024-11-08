@@ -163,7 +163,7 @@ func (s *Server) taskActivityNewPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "id must be int", 422)
 		return
 	}
-	_, err = s.st.TaskGet(id, r.Context())
+	t, err := s.st.TaskGet(id, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)
@@ -171,7 +171,7 @@ func (s *Server) taskActivityNewPost(w http.ResponseWriter, r *http.Request) {
 	}
 	decoder := schema.NewDecoder()
 	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
-		t, err := time.Parse("2006-01-02T15:04", s)
+		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
 		if err != nil {
 			return reflect.ValueOf(time.Now())
 		}
@@ -180,6 +180,14 @@ func (s *Server) taskActivityNewPost(w http.ResponseWriter, r *http.Request) {
 	err = decoder.Decode(&a, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
+		return
+	}
+	if t.Deadline != nil && a.TimeStart.After(*t.Deadline) {
+		http.Error(w, "start time cannot be after deadline", 422)
+		return
+	}
+	if t.Deadline != nil && a.TimeEnd.After(*t.Deadline) {
+		http.Error(w, "end time cannot be after deadline", 422)
 		return
 	}
 	a.TaskID = id
