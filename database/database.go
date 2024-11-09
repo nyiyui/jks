@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"errors"
 	"fmt"
 	"time"
 
@@ -235,18 +234,78 @@ func activityToStorage(a Activity) storage.Activity {
 	}
 }
 
-func (d *Database) TaskSearch(query string, ctx context.Context) (storage.Window[storage.Task], error) {
-	return nil, errors.New("not implemented")
+func (d *Database) TaskSearch(query string, undoneAt time.Time, ctx context.Context) (storage.Window[storage.Task], error) {
+	return &window3{d, undoneAt, query, ctx}, nil
 }
 
-func (d *Database) TaskAdd(v storage.Task, ctx context.Context) error {
-	_, err := d.DB.Exec(`INSERT INTO tasks (description, quick_title, deadline, due) VALUES (?, ?, ?, ?)`,
+type window3 struct {
+	d     *Database
+	now   time.Time
+	query string
+	ctx   context.Context
+}
+
+const deadlineWhere = `(deadline IS NULL OR UNIXEPOCH(deadline) >= ?)`
+const queryWhere = `(quick_title like ? OR description like ?)`
+const notDoneJoinWhere = `
+JOIN activity_log ON (tasks.id = activity_log.task_id)
+WHERE activity_log.time_end = (SELECT MAX(time_end) FROM activity_log WHERE activity_log.task_id = tasks.id)
+AND activity_log.status != 3
+`
+const unionNoLogs = `
+WHERE NOT EXISTS (SELECT * FROM activity_log WHERE activity_log.task_id = tasks.id)
+`
+
+func (w *window3) Get(limit, offset int) ([]storage.Task, error) {
+	ts := make([]Task, limit)
+	var err error
+	if w.query == "" {
+		err = w.d.DB.SelectContext(w.ctx, &ts,
+			`SELECT * FROM (`+
+				`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+
+				` UNION ALL `+
+				`SELECT * FROM tasks `+unionNoLogs+` AND `+deadlineWhere+
+				`) ORDER BY id ASC LIMIT ? OFFSET ?`,
+			w.now.Unix(),
+			w.now.Unix(),
+			limit, offset)
+	} else {
+		err = w.d.DB.SelectContext(w.ctx, &ts,
+			`SELECT * FROM (`+
+				`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+
+				` UNION ALL `+
+				`SELECT * FROM tasks `+unionNoLogs+` AND `+queryWhere+` AND `+deadlineWhere+
+				`) ORDER BY id ASC LIMIT ? OFFSET ?`,
+			w.query, w.query, w.now.Unix(),
+			w.query, w.query, w.now.Unix(),
+			limit, offset)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("select: %w", err)
+	}
+	ts2 := make([]storage.Task, len(ts))
+	for i := range ts {
+		ts2[i] = taskToStorage(ts[i])
+	}
+	return ts2, nil
+}
+
+func (w *window3) Close() error {
+	return nil
+}
+
+func (d *Database) TaskAdd(v storage.Task, ctx context.Context) (id int64, err error) {
+	res, err := d.DB.Exec(`INSERT INTO tasks (description, quick_title, deadline, due) VALUES (?, ?, ?, ?)`,
 		v.Description,
 		v.QuickTitle,
 		v.Deadline,
 		v.Due,
 	)
-	return err
+	if err != nil {
+		return
+	}
+	id, err = res.LastInsertId()
+	return
 }
 
 func (d *Database) ActivityRange(a, b time.Time, ctx context.Context) (storage.Window[storage.Activity], error) {

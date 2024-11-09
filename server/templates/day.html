@@ -60,10 +60,18 @@
       {{ $duration }}
       <a href="/activity/{{ $activity.ID }}">
         {{ if eq "" $activity.Note }}
-        Activity for {{ (index $.tasks $i).QuickTitle }}
+        Activity
         {{ else }}
         {{ $activity.Note }}
         {{ end }}
+      </a>
+      {{ if eq "" $activity.Note }}
+      for
+      {{ else }}
+      -
+      {{ end }}
+      <a href="/task/{{ (index $.tasks $i).ID }}">
+        {{ (index $.tasks $i).QuickTitle }}
       </a>
     </div>
   </div>

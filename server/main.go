@@ -36,7 +36,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) setup() error {
+	s.mux.HandleFunc("GET /undone-tasks", s.undoneTasks)
 	s.mux.HandleFunc("GET /activity/{id}", s.activityView)
+	s.mux.HandleFunc("GET /task/new", s.taskNew)
+	s.mux.HandleFunc("POST /task/new", s.taskNewPost)
 	s.mux.HandleFunc("GET /task/{id}", s.taskView)
 	s.mux.HandleFunc("GET /task/{id}/activity/new", s.taskActivityNew)
 	s.mux.HandleFunc("POST /task/{id}/activity/new", s.taskActivityNewPost)
@@ -44,11 +47,38 @@ func (s *Server) setup() error {
 	s.mux.HandleFunc("GET /activity/latest", s.activityLatest)
 	s.mux.HandleFunc("POST /activity/{id}/extend", s.activityExtend)
 	s.mux.HandleFunc("POST /activity/{id}/resume", s.activityResume)
-	s.mux.HandleFunc("GET /activity/new-with-task", s.activityNewWithTask)
 	s.mux.HandleFunc("GET /day/{date}", s.dayView)
 	s.mux.HandleFunc("GET /day/today", s.dayViewToday)
 	err := s.parseTemplates()
 	return err
+}
+
+func (s *Server) undoneTasks(w http.ResponseWriter, r *http.Request) {
+	tsw, err := s.st.TaskSearch("", time.Now(), r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	ts, err := tsw.Get(100, 0)
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	if len(ts) == 100 {
+		http.Error(w, "too many activities", 500)
+		return
+	}
+	err = s.tps["undone-tasks.html"].Execute(w, map[string]interface{}{
+		"tasks": ts,
+	})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
+		return
+	}
+	return
 }
 
 func (s *Server) activityView(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +155,46 @@ func (s *Server) taskView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	return
+}
+
+func (s *Server) taskNew(w http.ResponseWriter, r *http.Request) {
+	err := s.tps["task-new.html"].Execute(w, map[string]interface{}{})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
+		return
+	}
+	return
+}
+
+func (s *Server) taskNewPost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "parsing form data failed", 400)
+		return
+	}
+
+	var parsed storage.Task
+	decoder := schema.NewDecoder()
+	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
+		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
+		if err != nil {
+			return reflect.ValueOf(time.Now())
+		}
+		return reflect.ValueOf(t)
+	})
+	err = decoder.Decode(&parsed, r.PostForm)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
+		return
+	}
+	taskID, err := s.st.TaskAdd(parsed, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/task/%d", taskID), 302)
 }
 
 func (s *Server) taskActivityNew(w http.ResponseWriter, r *http.Request) {
@@ -321,16 +391,6 @@ func (s *Server) activityResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/activity/latest", 302)
-}
-
-func (s *Server) activityNewWithTask(w http.ResponseWriter, r *http.Request) {
-	err := s.tps["activity-new-with-task.html"].Execute(w, map[string]interface{}{})
-	if err != nil {
-		log.Printf("template: %s", err)
-		http.Error(w, "template error", 500)
-		return
-	}
-	return
 }
 
 func (s *Server) dayView(w http.ResponseWriter, r *http.Request) {

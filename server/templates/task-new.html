@@ -1,0 +1,25 @@
+{{ template "base.html" $ }}
+{{ define "title" }}New Task{{ end }}
+{{ define "body" }}
+{{ $now := now | formatDatetimeLocal }}
+<form action="/task/new" method="post">
+  <label>
+    Quick Title
+    <input type="text" name="QuickTitle" />
+  </label>
+  <label>
+    Description
+    <textarea name="Description"></textarea>
+  </label>
+  <label>
+    Deadline
+    <input type="datetime-local" name="Deadline" value="{{ $now }}" />
+  </label>
+  <label>
+    Due
+    <input type="datetime-local" name="Due" value="{{ $now }}" />
+  </label>
+  <input type="submit" value="Add" />
+</form>
+{{ end }}
+

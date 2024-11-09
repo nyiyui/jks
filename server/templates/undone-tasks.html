@@ -1,0 +1,37 @@
+{{ template "base.html" $ }}
+{{ define "head-extra" }}
+<style>
+  .task-tile {
+    display: grid;
+  }
+  .task-tile aside {
+    grid-column: 2;
+    text-align: right;
+  }
+</style>
+{{ end }}
+{{ define "title" }}
+{{ .tasks | len }} Undone Tasks
+{{ end }}
+{{ define "body" }}
+{{ range $i, $task := .tasks }}
+<div class="task-tile">
+  <a href="/task/{{ $task.ID }}">
+    <h2>{{ $task.QuickTitle }}</h2>
+  </a>
+  <aside>
+  {{ if $task.Due }}
+  Due on {{ $task.Due | formatUser }}
+  {{ end }}
+  <br />
+  {{ if $task.Deadline }}
+  Deadline is {{ $task.Deadline | formatUser }}
+  {{ end }}
+  </aside>
+  {{ $task.Description | renderMarkdown }}
+</div>
+{{ end }}
+<pre>
+{{ toPrettyJson . }}
+</pre>
+{{ end }}

@@ -3,7 +3,10 @@
 {{ .task.QuickTitle }}
 {{ end }}
 {{ define "body" }}
-<h1>{{ template "title" . }}</h1>
+<nav>
+  <span>{{ template "title" . }}</span>
+  <a href="/task/{{ .task.ID }}/activity/new">Add Activity</a>
+</nav>
 <aside>
   Spent: {{ .totalSpent }}
 </aside>

@@ -36,8 +36,8 @@ type Storage interface {
 	ActivityEdit(a Activity, ctx context.Context) error
 	TaskGet(id int64, ctx context.Context) (Task, error)
 	TaskGetActivities(id int64, ctx context.Context) (Window[Activity], error)
-	TaskSearch(query string, ctx context.Context) (Window[Task], error)
-	TaskAdd(t Task, ctx context.Context) error
+	TaskSearch(query string, undoneAt time.Time, ctx context.Context) (Window[Task], error)
+	TaskAdd(t Task, ctx context.Context) (id int64, err error)
 }
 
 type Window[T any] interface {

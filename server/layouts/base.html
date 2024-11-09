@@ -2,6 +2,10 @@
 <html>
   <head>
     <style>
+      main {
+        width: 900px;
+        margin: auto;
+      }
       form {
         display: table;
       }
@@ -21,7 +25,11 @@
     <nav>
       <a href="/activity/latest">Latest</a>
       <a href="/day/today">Today</a>
+      <a href="/undone-tasks">Undone</a>
+      <a href="/task/new">New Task</a>
     </nav>
-    {{ template "body" $ }}
+    <main>
+      {{ template "body" $ }}
+    </main>
   </body>
 </html>
