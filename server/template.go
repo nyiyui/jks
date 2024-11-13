@@ -11,6 +11,7 @@ import (
 	"github.com/google/safehtml/template"
 	"github.com/google/safehtml/uncheckedconversions"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
 
 func (s *Server) parseTemplates() error {
@@ -47,8 +48,9 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				return items
 			},
 			"renderMarkdown": func(s string) (safehtml.HTML, error) {
+				md := goldmark.New(goldmark.WithExtensions(extension.Linkify))
 				var buf bytes.Buffer
-				err := goldmark.Convert([]byte(s), &buf)
+				err := md.Convert([]byte(s), &buf)
 				if err != nil {
 					return safehtml.HTML{}, err
 				}
