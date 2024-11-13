@@ -9,8 +9,30 @@ New Activity for {{ .task.QuickTitle }}
 </nav>
 <form action="/task/{{ .task.ID }}/activity/new" method="post">
   <label>
+    Corresponding Plan
+    <select name="PlanID">
+      <option value="">None</option>
+      {{ range $i, $plan := .plans }}
+      <option {{ if eq $i $.selectedPlan }}selected{{ end }} value="{{ $plan.ID }}">
+        {{ $plan.TimeAtAfter.Local.Format "15:04" }}
+        to
+        {{ $plan.TimeBefore.Local.Format "15:04" }}
+        {{ if ne "" $plan.Location }}
+        at
+        {{ $plan.Location }}
+        {{ end }}
+      </option>
+      {{ end }}
+    </select>
+  </label>
+  <label>
     Location
-    <input type="text" name="Location" />
+    <input
+      type="text"
+      name="Location"
+      {{ $plan := index .plans $.selectedPlan }}
+      {{ if ne "" $plan.Location }}value="{{ $plan.Location }}"{{ end }}
+    />
   </label>
   <label>
     Start

@@ -4,13 +4,20 @@
 {{ end }}
 {{ define "head-extra" }}
 <style>
-  .activity {
+  .event {
     /* border-left: 2px black solid; */
     position: relative;
     z-index: 1;
-    background-color: #eee;
     border-radius: 8px;
     margin-left: 4rem;
+  }
+
+  .activity {
+    background-color: #eee;
+  }
+
+  .plan {
+    background-color: #ddf;
   }
 
   .hour {
@@ -39,6 +46,16 @@
 {{ define "body" }}
 {{ $compressionFactor := 60 }}
 <h1>{{ template "title" . }}</h1>
+<aside>
+  <a href="/day/{{ (.date.AddDate 0 0 -1).Format "2006-01-02" }}">
+    ←
+    {{ (.date.AddDate 0 0 -1).Format "2006-01-02" }}
+  </a>
+  <a href="/day/{{ (.date.AddDate 0 0 +1).Format "2006-01-02" }}" style="float: right;">
+    {{ (.date.AddDate 0 0 +1).Format "2006-01-02" }}
+    →
+  </a>
+</aside>
 <main>
   <div class="layer">
     {{ range $i := genRange 24 }}
@@ -47,13 +64,42 @@
     </div>
     {{ end }}
   </div>
+  {{ range $i, $plan := .plans }}
+  {{ if or (eq $plan.ActivityID 0) (eq ($plan.TimeAtAfter.Format "2006-01-02") ($plan.TimeBefore.Format "2006-01-02")) }}
+  <div class="layer">
+    {{ $top := (div (sub $plan.TimeAtAfter.Unix $.date.Unix) $compressionFactor) }}
+    {{ $height := (div (sub $plan.TimeBefore.Unix $plan.TimeAtAfter.Unix) $compressionFactor) }}
+    <div
+      class="event plan"
+      style="{{ styleTopHeight (printf "%dpx" $top) (printf "%dpx" $height) }}"
+    >
+      {{ $plan.TimeAtAfter.Local.Format "15:04" }}
+      to
+      {{ $plan.TimeBefore.Local.Format "15:04" }}
+      /
+      {{ if eq $plan.DurationGe $plan.DurationLt }}
+      {{ $plan.DurationGe }}
+      {{ else }}
+      {{ $plan.DurationGe }} to {{ $plan.DurationLt }}
+      {{ end }}
+      <a href="/plan/{{ $plan.ID }}">
+        Plan
+      </a>
+      for
+      <a href="/task/{{ $plan.TaskID }}">
+        {{ (index $.tasks $plan.TaskID).QuickTitle }}
+      </a>
+    </div>
+  </div>
+  {{ end }}
+  {{ end }}
   {{ range $i, $activity := .activities }}
   <div class="layer">
     {{ $top := (div (sub $activity.TimeStart.Unix $.date.Unix) $compressionFactor) }}
     {{ $height := (div (sub $activity.TimeEnd.Unix $activity.TimeStart.Unix) $compressionFactor) }}
     {{ $duration := $activity.TimeEnd.Sub $activity.TimeStart }}
     <div
-      class="activity"
+      class="event activity"
       style="{{ styleTopHeight (printf "%dpx" $top) (printf "%dpx" $height) }}"
     >
       {{ $activity.TimeStart.Local.Format "15:04" }}
@@ -70,8 +116,8 @@
       {{ else }}
       -
       {{ end }}
-      <a href="/task/{{ (index $.tasks $i).ID }}">
-        {{ (index $.tasks $i).QuickTitle }}
+      <a href="/task/{{ $activity.TaskID }}">
+        {{ (index $.tasks $activity.TaskID).QuickTitle }}
       </a>
     </div>
   </div>

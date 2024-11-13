@@ -1,0 +1,36 @@
+{{ template "base.html" $ }}
+{{ define "title" }}
+New Plan for {{ .task.QuickTitle }}
+{{ end }}
+{{ define "body" }}
+{{ $now := now | formatDatetimeLocal }}
+<nav>
+  <span>{{ template "title" . }}</span>
+</nav>
+<form action="/task/{{ .task.ID }}/plan/new" method="post">
+  <label>
+    Location
+    <input type="text" name="Location" />
+  </label>
+  <label>
+    Start at or after
+    <input type="datetime-local" name="TimeAtAfter" value="{{ $now }}" />
+  </label>
+  <label>
+    End before
+    <input type="datetime-local" name="TimeBefore" value="{{ $now }}" />
+  </label>
+  <label>
+    Duration greater than
+    <input type="text" name="DurationGe" />
+  </label>
+  <label>
+    Duration less than
+    <input type="text" name="DurationLt" />
+  </label>
+  <input type="submit" value="Add" />
+</form>
+<pre>
+{{ toPrettyJson . }}
+</pre>
+{{ end }}

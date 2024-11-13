@@ -28,16 +28,39 @@ type Activity struct {
 	Note      string
 }
 
+type Plan struct {
+	ID     int64
+	TaskID int64
+	// ActivityID is zero if there is no associated activity.
+	ActivityID  int64
+	Location    string
+	TimeAtAfter time.Time
+	TimeBefore  time.Time
+	DurationGe  time.Duration
+	DurationLt  time.Duration
+}
+
 type Storage interface {
 	ActivityAdd(a Activity, ctx context.Context) (id int64, err error)
 	ActivityLatestN(ctx context.Context, n int) ([]Activity, error)
 	ActivityGet(id int64, ctx context.Context) (Activity, error)
 	ActivityRange(a, b time.Time, ctx context.Context) (Window[Activity], error)
 	ActivityEdit(a Activity, ctx context.Context) error
+
+	PlanAdd(p Plan, ctx context.Context) (id int64, err error)
+	PlanGet(id int64, ctx context.Context) (Plan, error)
+	PlanRange(a, b time.Time, ctx context.Context) (Window[Plan], error)
+	PlanEdit(p Plan, ctx context.Context) error
+
 	TaskGet(id int64, ctx context.Context) (Task, error)
 	TaskGetActivities(id int64, ctx context.Context) (Window[Activity], error)
+	TaskGetPlans(id int64, limit, offset int, ctx context.Context) ([]Plan, error)
 	TaskSearch(query string, undoneAt time.Time, ctx context.Context) (Window[Task], error)
 	TaskAdd(t Task, ctx context.Context) (id int64, err error)
+
+	// Range returns activities and plans returned by PlanRange and ActivityRange.
+	// Tasks are the tasks referred to by each activity and plan.
+	Range(a, b time.Time, ctx context.Context) ([]Task, []Activity, []Plan, error)
 }
 
 type Window[T any] interface {

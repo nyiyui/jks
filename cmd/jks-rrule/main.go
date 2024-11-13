@@ -144,7 +144,7 @@ func createForTask(name string, st storage.Storage, cfg RRules, cache Cache, gen
 		task := taskCfg.Task
 		task.Due = &t
 		task.Deadline = &t
-		err := st.TaskAdd(task, context.Background())
+		_, err := st.TaskAdd(task, context.Background())
 		if err != nil {
 			return fmt.Errorf("add for %s: %w", t, err)
 		}

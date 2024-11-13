@@ -49,57 +49,6 @@ func Migrate(db *sql.DB) error {
 	return nil
 }
 
-type Task struct {
-	ID          int64
-	Description string
-	QuickTitle  string `db:"quick_title"`
-
-	// Deadline is the time after which this task is useless to complete.
-	// For example, studying for an exam after the exam itself is useless (for the purpose of scoring well on the exam).
-	// In this case, the deadline would be the exam start time.
-	// In the future, this may become a reference to another task, such that once that task is started, this task is useless to complete..
-	Deadline *time.Time `db:"deadline"`
-	Due      *time.Time `db:"due"`
-}
-
-func (t Task) GetID() int64 { return t.ID }
-
-func (t Task) String() string {
-	return t.QuickTitle
-}
-
-type Activity struct {
-	ID        int64
-	TaskID    int64 `db:"task_id"`
-	Location  string
-	TimeStart time.Time `db:"time_start"`
-	TimeEnd   time.Time `db:"time_end"`
-	Status    Status
-	Note      string
-}
-
-func (a Activity) GetID() int64 { return a.ID }
-
-type Status int
-
-const (
-	StatusUnknown Status = iota
-	StatusNotStarted
-	StatusInProgress
-	StatusDone
-)
-
-var StatusNames = [...]string{
-	StatusUnknown:    "Unknown",
-	StatusNotStarted: "Not Started",
-	StatusInProgress: "In Progress",
-	StatusDone:       "Done",
-}
-
-func (s Status) String() string {
-	return StatusNames[s]
-}
-
 var _ storage.Storage = (*Database)(nil)
 
 func (d *Database) ActivityAdd(a storage.Activity, ctx context.Context) (id int64, err error) {
@@ -180,6 +129,19 @@ func (d *Database) TaskGet(id int64, ctx context.Context) (storage.Task, error) 
 		Deadline:    t.Deadline,
 		Due:         t.Due,
 	}, nil
+}
+
+func (d *Database) TaskGetPlans(id int64, limit, offset int, ctx context.Context) ([]storage.Plan, error) {
+	ps := make([]Plan, limit)
+	err := d.DB.Select(&ps, `SELECT * FROM plans WHERE task_id = ? LIMIT ? OFFSET ?`, id, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("select: %w", err)
+	}
+	ps2 := make([]storage.Plan, len(ps))
+	for i := range ps {
+		ps2[i] = planToStorage(ps[i])
+	}
+	return ps2, nil
 }
 
 func (d *Database) TaskGetActivities(id int64, ctx context.Context) (storage.Window[storage.Activity], error) {
@@ -334,4 +296,128 @@ func (w *window2) Get(limit, offset int) ([]storage.Activity, error) {
 
 func (w *window2) Close() error {
 	return nil
+}
+
+func (d *Database) PlanAdd(p storage.Plan, ctx context.Context) (id int64, err error) {
+	res, err := d.DB.Exec(`INSERT INTO plans (task_id, activity_id, location, time_at_after, time_before, duration_ge, duration_lt) VALUES (?, ?, ?, ?, ?, ?, ?)`, p.TaskID, p.ActivityID, p.Location, p.TimeAtAfter.Unix(), p.TimeBefore.Unix(), p.DurationGe, p.DurationLt)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+func (d *Database) PlanGet(id int64, ctx context.Context) (storage.Plan, error) {
+	var v Plan
+	err := d.DB.Get(&v, `SELECT * FROM plans WHERE id = ?`, id)
+	if err != nil {
+		return storage.Plan{}, fmt.Errorf("select: %w", err)
+	}
+	var activityID int64
+	if v.ActivityID == nil {
+		activityID = 0
+	} else {
+		activityID = *v.ActivityID
+	}
+	return storage.Plan{
+		ID:          v.ID,
+		TaskID:      v.TaskID,
+		ActivityID:  activityID,
+		Location:    v.Location,
+		TimeAtAfter: v.TimeAtAfter,
+		TimeBefore:  v.TimeBefore,
+		DurationGe:  v.DurationGe,
+		DurationLt:  v.DurationLt,
+	}, nil
+}
+
+func (d *Database) PlanRange(a, b time.Time, ctx context.Context) (storage.Window[storage.Plan], error) {
+	return &window4{d, a, b, ctx}, nil
+}
+
+type window4 struct {
+	d    *Database
+	a, b time.Time
+	ctx  context.Context
+}
+
+func (w *window4) Get(limit, offset int) ([]storage.Plan, error) {
+	ts := make([]Plan, limit)
+	err := w.d.DB.SelectContext(w.ctx, &ts, `SELECT * FROM plans WHERE time_at_after >= ? AND time_before < ? LIMIT ? OFFSET ?`, w.a.Unix(), w.b.Unix(), limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("select: %w", err)
+	}
+	ts2 := make([]storage.Plan, len(ts))
+	for i := range ts {
+		ts2[i] = planToStorage(ts[i])
+	}
+	return ts2, nil
+}
+
+func (w *window4) Close() error {
+	return nil
+}
+
+func planToStorage(p Plan) storage.Plan {
+	var activityID int64
+	if p.ActivityID == nil {
+		activityID = 0
+	} else {
+		activityID = *p.ActivityID
+	}
+	return storage.Plan{
+		ID:          p.ID,
+		TaskID:      p.TaskID,
+		ActivityID:  activityID,
+		Location:    p.Location,
+		TimeAtAfter: p.TimeAtAfter,
+		TimeBefore:  p.TimeBefore,
+		DurationGe:  p.DurationGe,
+		DurationLt:  p.DurationLt,
+	}
+}
+
+func (d *Database) PlanEdit(p storage.Plan, ctx context.Context) error {
+	_, err := d.DB.ExecContext(ctx, `UPDATE plans SET task_id = ?, activity_id = ?, location = ?, time_at_after = ?, time_before = ?, duration_ge = ?, duration_lt = ? WHERE id = ?`, p.TaskID, p.ActivityID, p.Location, p.TimeAtAfter.Unix(), p.TimeBefore.Unix(), p.DurationGe, p.DurationLt, p.ID)
+	return err
+}
+
+func (d *Database) Range(a, b time.Time, ctx context.Context) ([]storage.Task, []storage.Activity, []storage.Plan, error) {
+	as := make([]Activity, 0)
+	err := d.DB.SelectContext(ctx, &as, `SELECT * FROM activity_log WHERE time_start >= ? AND time_end < ?`, a.Unix(), b.Unix())
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("select: %w", err)
+	}
+	activities := make([]storage.Activity, len(as))
+	for i := range as {
+		activities[i] = activityToStorage(as[i])
+	}
+
+	ps := make([]Plan, 0)
+	err = d.DB.SelectContext(ctx, &ps, `SELECT * FROM plans WHERE time_at_after >= ? AND time_before < ?`, a.Unix(), b.Unix())
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("select: %w", err)
+	}
+	plans := make([]storage.Plan, len(ps))
+	for i := range ps {
+		plans[i] = planToStorage(ps[i])
+	}
+
+	ts := make([]Task, 0)
+	err = d.DB.SelectContext(ctx, &ts, `
+SELECT tasks.* FROM tasks
+JOIN plans ON (tasks.id = plans.task_id)
+WHERE plans.time_at_after >= ? AND plans.time_before < ?
+UNION ALL
+SELECT tasks.* FROM tasks
+JOIN activity_log ON (tasks.id = activity_log.task_id)
+WHERE activity_log.time_start >= ? AND activity_log.time_end < ?
+`, a.Unix(), b.Unix(), a.Unix(), b.Unix())
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("select: %w", err)
+	}
+	tasks := make([]storage.Task, len(ts))
+	for i := range ts {
+		tasks[i] = taskToStorage(ts[i])
+	}
+	return tasks, activities, plans, nil
 }
