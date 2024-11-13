@@ -30,8 +30,10 @@ New Activity for {{ .task.QuickTitle }}
     <input
       type="text"
       name="Location"
+      {{ if .plans }}
       {{ $plan := index .plans $.selectedPlan }}
       {{ if ne "" $plan.Location }}value="{{ $plan.Location }}"{{ end }}
+      {{ end }}
     />
   </label>
   <label>
