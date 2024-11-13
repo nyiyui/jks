@@ -12,6 +12,13 @@
 </aside>
 <section id="description">
   {{ renderMarkdown .task.Description }}
+  {{ if .task.Due }}
+  Due on {{ .task.Due | formatUser }}
+  {{ end }}
+  <br />
+  {{ if .task.Deadline }}
+  Deadline is {{ .task.Deadline | formatUser }}
+  {{ end }}
 </section>
 <section id="activities">
   <h2>Activities</h2>
@@ -27,7 +34,4 @@
     {{ end }}
   </ol>
 </section>
-<pre>
-{{ toPrettyJson . }}
-</pre>
 {{ end }}
