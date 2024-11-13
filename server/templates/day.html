@@ -46,7 +46,7 @@
 {{ define "body" }}
 {{ $compressionFactor := 60 }}
 <h1>{{ template "title" . }}</h1>
-<aside>
+<nav>
   <a href="/day/{{ (.date.AddDate 0 0 -1).Format "2006-01-02" }}">
     ←
     {{ (.date.AddDate 0 0 -1).Format "2006-01-02" }}
@@ -55,6 +55,37 @@
     {{ (.date.AddDate 0 0 +1).Format "2006-01-02" }}
     →
   </a>
+</nav>
+<aside>
+  <h2>Multi-day Plans</h2>
+  <ul>
+  {{ range $i, $plan := .plans }}
+  {{ if ne ($plan.TimeAtAfter.Local.Format "2006-01-02") ($plan.TimeBefore.Local.Format "2006-01-02") }}
+  <li>
+    {{ $task := index $.tasks $plan.TaskID }}
+    <a href="/plan/{{ $plan.ID }}">
+      Plan
+    </a>
+    for
+    <a href="/task/{{ $plan.TaskID }}">
+      {{ $task.QuickTitle }}
+    </a>
+    from
+    <a href="/day/{{ $plan.TimeAtAfter.Local.Format "2006-01-02" }}">
+      {{ $plan.TimeAtAfter.Local.Format "2006-01-02" }}
+    </a>
+    {{ $plan.TimeAtAfter.Local.Format "15:04" }}
+    to
+    <a href="/day/{{ $plan.TimeBefore.Local.Format "2006-01-02" }}">
+      {{ $plan.TimeBefore.Local.Format "2006-01-02" }}
+    </a>
+    {{ $plan.TimeBefore.Local.Format "15:04" }}
+    for
+    {{ $plan.DurationGe }} to {{ $plan.DurationLt }}
+  </li>
+  {{ end }}
+  {{ end }}
+  </ul>
 </aside>
 <main>
   <div class="layer">
@@ -65,7 +96,7 @@
     {{ end }}
   </div>
   {{ range $i, $plan := .plans }}
-  {{ if or (eq $plan.ActivityID 0) (eq ($plan.TimeAtAfter.Format "2006-01-02") ($plan.TimeBefore.Format "2006-01-02")) }}
+  {{ if and (eq $plan.ActivityID 0) (eq ($plan.TimeAtAfter.Local.Format "2006-01-02") ($plan.TimeBefore.Local.Format "2006-01-02")) }}
   <div class="layer">
     {{ $top := (div (sub $plan.TimeAtAfter.Unix $.date.Unix) $compressionFactor) }}
     {{ $height := (div (sub $plan.TimeBefore.Unix $plan.TimeAtAfter.Unix) $compressionFactor) }}
