@@ -15,6 +15,23 @@
       form > input[type=submit] {
         float: right;
       }
+
+      body {
+        margin: 0;
+      }
+      #nav-main {
+        position: sticky;
+        top: 0;
+        color: #86cecb;
+        background-color: #373b3e;
+        padding: 8px;
+        display: flex;
+        gap: 12px;
+      }
+      #nav-main a {
+        color: #86cecb;
+        text-decoration: none;
+      }
     </style>
     <title>
       {{ block "title" $ }}{{ end }}
@@ -22,7 +39,7 @@
     {{ block "head-extra" $ }}{{ end }}
   </head>
   <body>
-    <nav>
+    <nav id="nav-main">
       <a href="/activity/latest">Latest</a>
       <a href="/day/today">Today</a>
       <a href="/undone-tasks">Undone</a>
