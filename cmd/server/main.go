@@ -7,6 +7,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/sessions"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
+
 	"nyiyui.ca/jks/database"
 	"nyiyui.ca/jks/server"
 )
@@ -42,7 +46,13 @@ func main() {
 	}
 	log.Printf("database ready.")
 
-	s, err := server.New(&database.Database{db})
+	store := sessions.NewFilesystemStore(".filesystem-store")
+	s, err := server.New(&database.Database{DB: db}, &oauth2.Config{
+		ClientID:     os.Getenv("JKS_OAUTH_CLIENT_ID"),
+		ClientSecret: os.Getenv("JKS_OAUTH_CLIENT_SECRET"),
+		Scopes:       []string{},
+		Endpoint:     github.Endpoint,
+	}, store, "nyiyui")
 	if err != nil {
 		panic(err)
 	}

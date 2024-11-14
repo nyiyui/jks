@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/gorilla/schema"
+	"github.com/gorilla/sessions"
+	"golang.org/x/oauth2"
 
 	"github.com/google/safehtml/template"
 
@@ -17,15 +19,21 @@ import (
 )
 
 type Server struct {
-	mux *http.ServeMux
-	st  storage.Storage
-	tps map[string]*template.Template
+	mux         *http.ServeMux
+	st          storage.Storage
+	tps         map[string]*template.Template
+	oauthConfig *oauth2.Config
+	store       sessions.Store
+	adminUser   string
 }
 
-func New(st storage.Storage) (*Server, error) {
+func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string) (*Server, error) {
 	s := &Server{
-		mux: http.NewServeMux(),
-		st:  st,
+		mux:         http.NewServeMux(),
+		st:          st,
+		oauthConfig: oauthConfig,
+		store:       store,
+		adminUser:   adminUser,
 	}
 	err := s.setup()
 	return s, err
@@ -36,6 +44,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) setup() error {
+	s.mux.HandleFunc("GET /login", s.login)
+
 	s.mux.HandleFunc("GET /undone-tasks", s.undoneTasks)
 	s.mux.HandleFunc("GET /activity/{id}", s.activityView)
 	s.mux.HandleFunc("GET /task/new", s.taskNew)
