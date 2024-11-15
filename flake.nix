@@ -18,6 +18,12 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        build-jks = pkgs: (pkgs.buildGoModule rec {
+          pname = "jks";
+          version = "0.0.0";
+          src = ./.;
+          vendorHash = "sha256-dwSvxFceSNvoGqbSjAXmIFElVMhgK4od0V2ij/GYje0=";
+        });
       in
       {
         devShells.default = pkgs.mkShell {
@@ -39,6 +45,7 @@
             xorg.libXxf86vm
           ];
         };
+        packages.jks = build-jks pkgs;
       }
     );
 }
