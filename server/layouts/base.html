@@ -32,6 +32,9 @@
         color: #86cecb;
         text-decoration: none;
       }
+      #nav-main .right {
+        margin-left: auto;
+      }
     </style>
     <title>
       {{ block "title" $ }}{{ end }}
@@ -44,6 +47,11 @@
       <a href="/day/today">Today</a>
       <a href="/undone-tasks">Undone</a>
       <a href="/task/new">New Task</a>
+      {{ if .login }}
+      <span class="right">
+      {{ .login.Login }}
+      </span>
+      {{ end }}
     </nav>
     <main>
       {{ template "body" $ }}

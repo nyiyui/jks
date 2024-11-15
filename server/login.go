@@ -1,27 +1,63 @@
 package server
 
 import (
+	"context"
 	"encoding/gob"
 	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"golang.org/x/oauth2"
 )
 
+type key struct{}
+
+var LoginUserDataKey key
+
 func init() {
-	gob.Register(new(githubUserData))
+	gob.RegisterName("githubUserData", githubUserData{})
+}
+
+func (s *Server) mainLogin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		loginSession, err := s.store.Get(r, "login")
+		if err != nil {
+			log.Printf("login session get: %s", err)
+			http.Error(w, "session failure", 400)
+			return
+		}
+		_, ok := loginSession.Values["githubUserData"]
+		if !ok {
+			http.Redirect(w, r, "/login", 302)
+			return
+		}
+		data := loginSession.Values["githubUserData"].(githubUserData)
+		if data.Login != s.mainUser {
+			http.Error(w, "must be main user", 401)
+			return
+		}
+		r2 := r.WithContext(context.WithValue(r.Context(), LoginUserDataKey, data))
+		next.ServeHTTP(w, r2)
+	})
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	session, err := s.store.Get(r, "login-oauth2")
 	if err != nil {
+		log.Printf("session get: %s", err)
 		http.Error(w, "session failure", 400)
 		return
 	}
 	verifier := oauth2.GenerateVerifier()
 	session.Values["verifier"] = verifier
-	session.Save(r, w)
+	err = session.Save(r, w)
+	if err != nil {
+		log.Printf("session save: %s", err)
+		http.Error(w, "session failure", 400)
+		return
+	}
 	url := s.oauthConfig.AuthCodeURL("", oauth2.S256ChallengeOption(verifier))
 	http.Redirect(w, r, url, 302)
 }
@@ -35,12 +71,22 @@ type githubUserData struct {
 func (s *Server) loginCallback(w http.ResponseWriter, r *http.Request) {
 	session, err := s.store.Get(r, "login-oauth2")
 	if err != nil {
+		log.Printf("session get: %s", err)
 		http.Error(w, "session failure", 400)
 		return
 	}
 	loginSession, err := s.store.Get(r, "login")
 	if err != nil {
+		log.Printf("login session get: %s", err)
 		http.Error(w, "session failure", 400)
+		return
+	}
+
+	log.Printf("session: %s", session.Values)
+
+	_, ok := session.Values["verifier"]
+	if !ok {
+		http.Error(w, "try logging in again", 400)
 		return
 	}
 
@@ -77,12 +123,15 @@ func (s *Server) loginCallback(w http.ResponseWriter, r *http.Request) {
 	loginSession.Values["githubUserData"] = data
 	err = session.Save(r, w)
 	if err != nil {
+		log.Printf("session save: %s", err)
 		http.Error(w, "session failure", 400)
 		return
 	}
 	err = loginSession.Save(r, w)
 	if err != nil {
+		log.Printf("login session save: %s", err)
 		http.Error(w, "session failure", 400)
 		return
 	}
+	http.Error(w, fmt.Sprintf("logged in as %s", data.Login), 200)
 }

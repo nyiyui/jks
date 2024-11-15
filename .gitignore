@@ -1,4 +1,3 @@
 .direnv
 .envrc
 db.sqlite3
-.filesystem-store

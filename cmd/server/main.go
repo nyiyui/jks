@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"log"
@@ -46,12 +47,17 @@ func main() {
 	}
 	log.Printf("database ready.")
 
-	store := sessions.NewFilesystemStore(".filesystem-store")
+	authKey, err := hex.DecodeString(os.Getenv("JKS_STORE_AUTH_KEY"))
+	if err != nil {
+		panic(err)
+	}
+	store := sessions.NewFilesystemStore("", authKey)
 	s, err := server.New(&database.Database{DB: db}, &oauth2.Config{
 		ClientID:     os.Getenv("JKS_OAUTH_CLIENT_ID"),
 		ClientSecret: os.Getenv("JKS_OAUTH_CLIENT_SECRET"),
 		Scopes:       []string{},
 		Endpoint:     github.Endpoint,
+		RedirectURL:  "http://127.0.0.1:8080/login/callback",
 	}, store, "nyiyui")
 	if err != nil {
 		panic(err)

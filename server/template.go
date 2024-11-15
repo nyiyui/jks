@@ -3,6 +3,8 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"net/http"
 	"path/filepath"
 	"time"
 
@@ -13,6 +15,26 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 )
+
+type stringConstant string
+
+func (s *Server) renderTemplate(path stringConstant, w http.ResponseWriter, r *http.Request, data map[string]interface{}) {
+	t, ok := s.tps[string(path)]
+	if !ok {
+		panic("template not found")
+		return
+	}
+	if data == nil {
+		data = map[string]interface{}{}
+	}
+	data["login"], _ = r.Context().Value(LoginUserDataKey).(githubUserData)
+	err := t.Execute(w, data)
+	if err != nil {
+		log.Printf("template error: %s", err)
+		http.Error(w, "template error", 500)
+		return
+	}
+}
 
 func (s *Server) parseTemplates() error {
 	matches, err := filepath.Glob("server/templates/*.html")

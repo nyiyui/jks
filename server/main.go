@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,13 +17,21 @@ import (
 	"nyiyui.ca/jks/storage"
 )
 
+func composeFunc(handler http.HandlerFunc, middleware ...func(http.Handler) http.Handler) http.Handler {
+	var h http.Handler = handler
+	for i := len(middleware) - 1; i >= 0; i-- {
+		h = middleware[i](h)
+	}
+	return h
+}
+
 type Server struct {
 	mux         *http.ServeMux
 	st          storage.Storage
 	tps         map[string]*template.Template
 	oauthConfig *oauth2.Config
 	store       sessions.Store
-	adminUser   string
+	mainUser    string
 }
 
 func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string) (*Server, error) {
@@ -33,7 +40,7 @@ func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, a
 		st:          st,
 		oauthConfig: oauthConfig,
 		store:       store,
-		adminUser:   adminUser,
+		mainUser:    adminUser,
 	}
 	err := s.setup()
 	return s, err
@@ -45,24 +52,24 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) setup() error {
 	s.mux.HandleFunc("GET /login", s.login)
+	s.mux.HandleFunc("GET /login/callback", s.loginCallback)
 
-	s.mux.HandleFunc("GET /undone-tasks", s.undoneTasks)
-	s.mux.HandleFunc("GET /activity/{id}", s.activityView)
-	s.mux.HandleFunc("GET /task/new", s.taskNew)
-	s.mux.HandleFunc("POST /task/new", s.taskNewPost)
-	s.mux.HandleFunc("GET /task/{id}", s.taskView)
-	s.mux.HandleFunc("GET /task/{id}/activity/new", s.taskActivityNew)
-	s.mux.HandleFunc("POST /task/{id}/activity/new", s.taskActivityNewPost)
-	s.mux.HandleFunc("GET /task/{id}/plan/new", s.taskPlanNew)
-	s.mux.HandleFunc("POST /task/{id}/plan/new", s.taskPlanNewPost)
-	s.mux.HandleFunc("POST /activity/new", s.activityNew)
-	s.mux.HandleFunc("GET /activity/latest", s.activityLatest)
-	s.mux.HandleFunc("POST /activity/{id}/extend", s.activityExtend)
-	s.mux.HandleFunc("POST /activity/{id}/resume", s.activityResume)
-	s.mux.HandleFunc("GET /day/{date}", s.dayView)
-	s.mux.HandleFunc("GET /day/yesterday", s.makeDayViewDelta(-1))
-	s.mux.HandleFunc("GET /day/today", s.makeDayViewDelta(0))
-	s.mux.HandleFunc("GET /day/tomorrow", s.makeDayViewDelta(1))
+	s.mux.Handle("GET /undone-tasks", composeFunc(s.undoneTasks, s.mainLogin))
+	s.mux.Handle("GET /activity/{id}", composeFunc(s.activityView, s.mainLogin))
+	s.mux.Handle("GET /task/new", composeFunc(s.taskNew, s.mainLogin))
+	s.mux.Handle("POST /task/new", composeFunc(s.taskNewPost, s.mainLogin))
+	s.mux.Handle("GET /task/{id}", composeFunc(s.taskView, s.mainLogin))
+	s.mux.Handle("GET /task/{id}/activity/new", composeFunc(s.taskActivityNew, s.mainLogin))
+	s.mux.Handle("POST /task/{id}/activity/new", composeFunc(s.taskActivityNewPost, s.mainLogin))
+	s.mux.Handle("GET /task/{id}/plan/new", composeFunc(s.taskPlanNew, s.mainLogin))
+	s.mux.Handle("POST /task/{id}/plan/new", composeFunc(s.taskPlanNewPost, s.mainLogin))
+	s.mux.Handle("GET /activity/latest", composeFunc(s.activityLatest, s.mainLogin))
+	s.mux.Handle("POST /activity/{id}/extend", composeFunc(s.activityExtend, s.mainLogin))
+	s.mux.Handle("POST /activity/{id}/resume", composeFunc(s.activityResume, s.mainLogin))
+	s.mux.Handle("GET /day/{date}", composeFunc(s.dayView, s.mainLogin))
+	s.mux.Handle("GET /day/yesterday", composeFunc(s.makeDayViewDelta(-1), s.mainLogin))
+	s.mux.Handle("GET /day/today", composeFunc(s.makeDayViewDelta(0), s.mainLogin))
+	s.mux.Handle("GET /day/tomorrow", composeFunc(s.makeDayViewDelta(1), s.mainLogin))
 	err := s.parseTemplates()
 	return err
 }
@@ -84,14 +91,9 @@ func (s *Server) undoneTasks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "too many activities", 500)
 		return
 	}
-	err = s.tps["undone-tasks.html"].Execute(w, map[string]interface{}{
+	s.renderTemplate("undone-tasks.html", w, r, map[string]interface{}{
 		"tasks": ts,
 	})
-	if err != nil {
-		log.Printf("template: %s", err)
-		http.Error(w, "template error", 500)
-		return
-	}
 	return
 }
 
@@ -113,15 +115,10 @@ func (s *Server) activityView(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	err = s.tps["activity.html"].Execute(w, map[string]interface{}{
+	s.renderTemplate("activity.html", w, r, map[string]interface{}{
 		"activity": a,
 		"task":     t,
 	})
-	if err != nil {
-		log.Printf("template: %s", err)
-		http.Error(w, "template error", 500)
-		return
-	}
 	return
 }
 
@@ -158,26 +155,16 @@ func (s *Server) taskView(w http.ResponseWriter, r *http.Request) {
 	for _, a := range as {
 		totalSpent += a.TimeEnd.Sub(a.TimeStart)
 	}
-	err = s.tps["task.html"].Execute(w, map[string]interface{}{
+	s.renderTemplate("task.html", w, r, map[string]interface{}{
 		"task":       t,
 		"activities": as,
 		"totalSpent": totalSpent,
 	})
-	if err != nil {
-		log.Printf("template: %s", err)
-		http.Error(w, "template error", 500)
-		return
-	}
 	return
 }
 
 func (s *Server) taskNew(w http.ResponseWriter, r *http.Request) {
-	err := s.tps["task-new.html"].Execute(w, map[string]interface{}{})
-	if err != nil {
-		log.Printf("template: %s", err)
-		http.Error(w, "template error", 500)
-		return
-	}
+	s.renderTemplate("task-new.html", w, r, map[string]interface{}{})
 	return
 }
 
@@ -235,16 +222,11 @@ func (s *Server) taskActivityNew(w http.ResponseWriter, r *http.Request) {
 			selectedPlan = i
 		}
 	}
-	err = s.tps["task-activity-new.html"].Execute(w, map[string]interface{}{
+	s.renderTemplate("task-activity-new.html", w, r, map[string]interface{}{
 		"task":         t,
 		"plans":        plans,
 		"selectedPlan": selectedPlan,
 	})
-	if err != nil {
-		log.Printf("template: %s", err)
-		http.Error(w, "template error", 500)
-		return
-	}
 	return
 }
 
@@ -335,14 +317,9 @@ func (s *Server) taskPlanNew(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	err = s.tps["task-plan-new.html"].Execute(w, map[string]interface{}{
+	s.renderTemplate("task-plan-new.html", w, r, map[string]interface{}{
 		"task": t,
 	})
-	if err != nil {
-		log.Printf("template: %s", err)
-		http.Error(w, "template error", 500)
-		return
-	}
 	return
 }
 
@@ -407,22 +384,6 @@ type ActivityNewQ struct {
 	Activity storage.Activity
 }
 
-func (s *Server) activityNew(w http.ResponseWriter, r *http.Request) {
-	var q ActivityNewQ
-	err := json.NewDecoder(r.Body).Decode(&q)
-	if err != nil {
-		http.Error(w, "json decode failed", 422)
-		return
-	}
-	_, err = s.st.ActivityAdd(q.Activity, r.Context())
-	if err != nil {
-		log.Printf("storage: %s", err)
-		http.Error(w, "storage error", 500)
-		return
-	}
-	http.Error(w, "ok", 200)
-}
-
 func (s *Server) activityLatest(w http.ResponseWriter, r *http.Request) {
 	as, err := s.st.ActivityLatestN(r.Context(), 7)
 	if err != nil {
@@ -441,7 +402,7 @@ func (s *Server) activityLatest(w http.ResponseWriter, r *http.Request) {
 		ts[i] = t
 	}
 
-	err = s.tps["activity-latest.html"].Execute(w, map[string]interface{}{
+	s.renderTemplate("activity-latest.html", w, r, map[string]interface{}{
 		"latest": as,
 		"tasks":  ts,
 	})
@@ -546,7 +507,7 @@ func (s *Server) dayView(w http.ResponseWriter, r *http.Request) {
 		tasksByID[t.ID] = t
 	}
 
-	err = s.tps["day.html"].Execute(w, map[string]interface{}{
+	s.renderTemplate("day.html", w, r, map[string]interface{}{
 		"date":       date,
 		"activities": as,
 		"tasks":      tasksByID,
