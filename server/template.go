@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -44,7 +45,7 @@ func (s *Server) renderTemplate(path stringConstant, w http.ResponseWriter, r *h
 }
 
 func (s *Server) parseTemplates() error {
-	matches, err := filepath.Glob("server/templates/*.html")
+	matches, err := fs.Glob(templatesFS, "templates/*.html")
 	if err != nil {
 		return err
 	}
