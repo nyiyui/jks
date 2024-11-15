@@ -95,11 +95,11 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				return fmt.Sprintf("%s (%s)", abs, rel2[:len(rel2)-2])
 			},
 		})
-	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "server/layouts/*.html")
+	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "layouts/*.html")
 	if err != nil {
 		return nil, err
 	}
-	t, err = t.ParseFS(template.TrustedFSFromEmbed(templatesFS), fmt.Sprintf("server/templates/%s.html", basename))
+	t, err = t.ParseFS(template.TrustedFSFromEmbed(templatesFS), fmt.Sprintf("templates/%s.html", basename))
 	if err != nil {
 		return nil, err
 	}
