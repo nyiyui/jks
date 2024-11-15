@@ -22,7 +22,8 @@
           pname = "jks";
           version = "0.0.0";
           src = ./.;
-          vendorHash = "sha256-dwSvxFceSNvoGqbSjAXmIFElVMhgK4od0V2ij/GYje0=";
+          vendorHash = "sha256-7LfWETUR3A6SKuLoT8vAsem6zI5hl9OvE0HqxZtCXNQ=";
+          subPackages = [ "cmd/server" ];
         });
       in
       {

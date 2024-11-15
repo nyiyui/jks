@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"flag"
 	"log"
 	"net/http"
@@ -16,24 +15,12 @@ import (
 	"nyiyui.ca/jks/server"
 )
 
-type Config struct{}
-
 func main() {
 	var dbPath string
-	var configPath string
+	var bindAddress string
 	flag.StringVar(&dbPath, "db-path", "db.sqlite3", "path to database")
-	flag.StringVar(&configPath, "config-path", "jks-server-config.json", "path to config")
+	flag.StringVar(&bindAddress, "bind", "127.0.0.1:8080", "bind address")
 	flag.Parse()
-
-	configRaw, err := os.ReadFile(configPath)
-	if err != nil {
-		panic(err)
-	}
-	var config Config
-	err = json.Unmarshal(configRaw, &config)
-	if err != nil {
-		panic(err)
-	}
 
 	log.Printf("opening database...")
 	db, err := database.Open(dbPath)
@@ -62,5 +49,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	panic(http.ListenAndServe("127.0.0.1:8080", s))
+	panic(http.ListenAndServe(bindAddress, s))
 }
