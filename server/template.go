@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,12 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 )
+
+//go:embed layouts
+var layoutsFS embed.FS
+
+//go:embed templates
+var templatesFS embed.FS
 
 type stringConstant string
 
@@ -88,15 +95,11 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				return fmt.Sprintf("%s (%s)", abs, rel2[:len(rel2)-2])
 			},
 		})
-	t, err := t.ParseGlob("server/layouts/*.html")
+	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "server/layouts/*.html")
 	if err != nil {
 		return nil, err
 	}
-	ts, err := template.TrustedSourceFromConstantDir("server/templates", template.TrustedSource{}, basename)
-	if err != nil {
-		return nil, err
-	}
-	t, err = t.ParseFilesFromTrustedSources(ts)
+	t, err = t.ParseFS(template.TrustedFSFromEmbed(templatesFS), fmt.Sprintf("server/templates/%s.html", basename))
 	if err != nil {
 		return nil, err
 	}
