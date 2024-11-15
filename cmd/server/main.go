@@ -44,7 +44,7 @@ func main() {
 		ClientSecret: os.Getenv("JKS_OAUTH_CLIENT_SECRET"),
 		Scopes:       []string{},
 		Endpoint:     github.Endpoint,
-		RedirectURL:  "http://127.0.0.1:8080/login/callback",
+		RedirectURL:  os.Getenv("JKS_OAUTH_REDIRECT_URI"),
 	}, store, "nyiyui")
 	if err != nil {
 		panic(err)
