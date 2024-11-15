@@ -20,7 +20,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
         build-jks = pkgs: (pkgs.buildGoModule rec {
           pname = "jks";
-          version = "0.0.0";
+          version = if (self ? rev) then self.rev else "dirty";
           src = ./.;
           vendorHash = "sha256-7LfWETUR3A6SKuLoT8vAsem6zI5hl9OvE0HqxZtCXNQ=";
           subPackages = [ "cmd/server" ];
