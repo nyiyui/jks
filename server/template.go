@@ -99,7 +99,7 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 	if err != nil {
 		return nil, err
 	}
-	t, err = t.ParseFS(template.TrustedFSFromEmbed(templatesFS), fmt.Sprintf("templates/%s.html", basename))
+	t, err = t.ParseFS(template.TrustedFSFromEmbed(templatesFS), fmt.Sprintf("templates/%s", basename))
 	if err != nil {
 		return nil, err
 	}
