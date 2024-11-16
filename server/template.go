@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/sprig/v3"
@@ -94,6 +95,20 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				rel := t.Sub(time.Now()).Round(time.Minute)
 				rel2 := rel.String()
 				return fmt.Sprintf("%s (%s)", abs, rel2[:len(rel2)-2])
+			},
+			"splitNoteTitle": func(s string) string {
+				lines := strings.SplitN(s, "\n", 2)
+				if len(lines) == 1 {
+					return lines[0]
+				}
+				return lines[0]
+			},
+			"splitNoteBody": func(s string) string {
+				lines := strings.SplitN(s, "\n", 2)
+				if len(lines) == 1 {
+					return ""
+				}
+				return lines[1]
 			},
 		})
 	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "layouts/*.html")

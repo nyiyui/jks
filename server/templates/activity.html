@@ -3,11 +3,34 @@
 {{ if eq "" .activity.Note }}
 Activity for {{ .task.QuickTitle }}
 {{ else }}
-{{ .activity.Note }}
+{{ $title := splitNoteTitle .activity.Note }}
+{{ $title }}
 {{ end }}
 {{ end }}
 {{ define "body" }}
-<h1>{{ template "title" . }}</h1>
+<nav>
+  <span>{{ template "title" . }}</span>
+  <a href="/task/{{ .task.ID }}">Task</a>
+</nav>
+<aside>
+  {{ if .task.TimeStart }}
+  {{ .activity.TimeStart | formatUser }}
+  {{ end }}
+  to
+  {{ if .task.TimeEnd }}
+  {{ .activity.TimeEnd | formatUser }}
+  {{ end }}
+  <br />
+  Location: {{ .activity.Location }}
+  <br />
+  {{ if .activity.Done }}
+  Done
+  {{ else }}
+  Not Done
+  {{ end }}
+</aside>
+{{ $body := splitNoteBody .activity.Note }}
+{{ renderMarkdown $body }}
 <pre>
 {{ toPrettyJson . }}
 </pre>
