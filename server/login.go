@@ -44,6 +44,10 @@ func (s *Server) mainLogin(next http.Handler) http.Handler {
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Has("code") {
+		http.Error(w,"login page should not have query parameter `code' - make sure your redirect URI is set correctly.", 500)
+		return
+	}
 	session, err := s.store.Get(r, "login-oauth2")
 	if err != nil {
 		log.Printf("session get: %s", err)
