@@ -13,11 +13,11 @@ Activity for {{ .task.QuickTitle }}
   <a href="/task/{{ .task.ID }}">Task</a>
 </nav>
 <aside>
-  {{ if .task.TimeStart }}
+  {{ if .activity.TimeStart }}
   {{ .activity.TimeStart | formatUser }}
   {{ end }}
   to
-  {{ if .task.TimeEnd }}
+  {{ if .activity.TimeEnd }}
   {{ .activity.TimeEnd | formatUser }}
   {{ end }}
   <br />
