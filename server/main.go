@@ -61,6 +61,8 @@ func (s *Server) setup() error {
 	s.mux.Handle("GET /task/{id}", composeFunc(s.taskView, s.mainLogin))
 	s.mux.Handle("GET /task/{id}/activity/new", composeFunc(s.taskActivityNew, s.mainLogin))
 	s.mux.Handle("POST /task/{id}/activity/new", composeFunc(s.taskActivityNewPost, s.mainLogin))
+	s.mux.Handle("GET /task/new/activity/new", composeFunc(s.taskNewActivityNew, s.mainLogin))
+	s.mux.Handle("POST /task/new/activity/new", composeFunc(s.taskNewActivityNewPost, s.mainLogin))
 	s.mux.Handle("GET /task/{id}/plan/new", composeFunc(s.taskPlanNew, s.mainLogin))
 	s.mux.Handle("POST /task/{id}/plan/new", composeFunc(s.taskPlanNewPost, s.mainLogin))
 	s.mux.Handle("GET /activity/latest", composeFunc(s.activityLatest, s.mainLogin))
@@ -196,6 +198,52 @@ func (s *Server) taskNewPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, fmt.Sprintf("/task/%d", taskID), 302)
+}
+
+func (s *Server) taskNewActivityNew(w http.ResponseWriter, r *http.Request) {
+	s.renderTemplate("task-new-activity-new.html", w, r, map[string]interface{}{})
+	return
+}
+
+type taskNewActivityNewQ struct {
+	storage.Task
+	storage.Activity
+}
+
+func (s *Server) taskNewActivityNewPost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "parsing form data failed", 400)
+		return
+	}
+
+	var parsed taskNewActivityNewQ
+	decoder := schema.NewDecoder()
+	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
+		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
+		if err != nil {
+			return reflect.ValueOf(time.Now())
+		}
+		return reflect.ValueOf(t)
+	})
+	err = decoder.Decode(&parsed, r.PostForm)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
+		return
+	}
+	_, err = s.st.TaskAdd(parsed.Task, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	activityID, err := s.st.ActivityAdd(parsed.Activity, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/activity/%d", activityID), 302)
 }
 
 func (s *Server) taskActivityNew(w http.ResponseWriter, r *http.Request) {
