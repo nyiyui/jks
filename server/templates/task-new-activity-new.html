@@ -10,19 +10,19 @@
     <legend>Task</legend>
     <label>
       Quick Title
-      <input type="text" name="QuickTitle" />
+      <input type="text" name="QuickTitle" value="{{ if .preset.QuickTitle }}{{ .preset.QuickTitle }}{{ end }}" />
     </label>
     <label>
       Description
-      <textarea name="Description"></textarea>
+      <textarea name="Description">{{ if .preset.Description }}{{ .preset.Description }}{{ end }}</textarea>
     </label>
     <label>
       Deadline
-      <input type="datetime-local" name="Deadline" value="{{ $now }}" />
+      <input type="datetime-local" name="Deadline" value="{{ .preset.Deadline }}" />
     </label>
     <label>
       Due
-      <input type="datetime-local" name="Due" value="{{ $now }}" />
+      <input type="datetime-local" name="Due" value="{{ .preset.Due }}" />
     </label>
   </fieldset>
   <fieldset>
@@ -32,27 +32,24 @@
       <input
         type="text"
         name="Location"
-        {{ if .plans }}
-        {{ $plan := index .plans $.selectedPlan }}
-        {{ if ne "" $plan.Location }}value="{{ $plan.Location }}"{{ end }}
-        {{ end }}
+        value="{{ if .preset.Location }}{{ .preset.Location }}{{ end }}"
       />
     </label>
     <label>
       Start
-      <input type="datetime-local" name="TimeStart" value="{{ $now }}" />
+      <input type="datetime-local" name="TimeStart" value="{{ .preset.TimeStart }}" />
     </label>
     <label>
       End
-      <input type="datetime-local" name="TimeEnd" value="{{ $now }}" />
+      <input type="datetime-local" name="TimeEnd" value="{{ .preset.TimeEnd }}" />
     </label>
     <label>
-      <input type="checkbox" name="Done" />
+      <input type="checkbox" name="Done" {{ if .preset.Done }}checked{{ end }} />
       Task is done with this activity
     </label>
     <label>
       Note
-      <textarea name="Note"></textarea>
+      <textarea name="Note">{{ if .preset.Note }}{{ .preset.Note }}{{ end }}</textarea>
     </label>
   </fieldset>
   <input type="submit" value="Add" />

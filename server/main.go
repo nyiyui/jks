@@ -201,7 +201,25 @@ func (s *Server) taskNewPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) taskNewActivityNew(w http.ResponseWriter, r *http.Request) {
-	s.renderTemplate("task-new-activity-new.html", w, r, map[string]interface{}{})
+	preset := map[string]string{}
+	for k, v := range r.URL.Query() {
+		if len(v) > 0 {
+			preset[k] = v[0]
+		}
+	}
+	if _, ok := preset["Deadline"]; !ok {
+		preset["Deadline"] = time.Now().Format("2006-01-02T15:04")
+	}
+	if _, ok := preset["Due"]; !ok {
+		preset["Due"] = time.Now().Format("2006-01-02T15:04")
+	}
+	if _, ok := preset["TimeStart"]; !ok {
+		preset["TimeStart"] = time.Now().Format("2006-01-02T15:04")
+	}
+	if _, ok := preset["TimeEnd"]; !ok {
+		preset["TimeEnd"] = time.Now().Format("2006-01-02T15:04")
+	}
+	s.renderTemplate("task-new-activity-new.html", w, r, map[string]interface{}{"preset": preset})
 	return
 }
 
