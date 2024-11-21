@@ -249,15 +249,16 @@ func (s *Server) taskNewActivityNewPost(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
 	}
-	_, err = s.st.TaskAdd(parsed.Task, r.Context())
+	taskID, err = s.st.TaskAdd(parsed.Task, r.Context())
 	if err != nil {
-		log.Printf("storage: %s", err)
+		log.Printf("storage: add task: %s", err)
 		http.Error(w, "storage error", 500)
 		return
 	}
+	parsed.Activity.TaskID = taskID
 	activityID, err := s.st.ActivityAdd(parsed.Activity, r.Context())
 	if err != nil {
-		log.Printf("storage: %s", err)
+		log.Printf("storage: add activity: %s", err)
 		http.Error(w, "storage error", 500)
 		return
 	}
