@@ -47,8 +47,8 @@ type Plan struct {
 }
 
 func (p Plan) Layout() (top int, height int) {
-	start := p.TimeBefore.Unix()
-	end := p.TimeAtAfter.Unix()
+	start := p.TimeAtAfter.Unix()
+	end := p.TimeBefore.Unix()
 	return int(start), int(end - start)
 }
 
