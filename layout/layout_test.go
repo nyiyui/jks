@@ -64,7 +64,7 @@ func TestLayout(t *testing.T) {
 	// 1
 	// 12
 	// 32
-	nColumns, columns := Layout(boxes)
+	nColumns, columns := Layout(boxes, 0)
 	for _, column := range columns {
 		if column+1 > nColumns {
 			t.Errorf("column %d is out of range", column)

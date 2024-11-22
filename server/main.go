@@ -583,7 +583,7 @@ func (s *Server) dayView(w http.ResponseWriter, r *http.Request) {
 		events[len(as)+i] = p
 	}
 
-	nColumns, columns := layout.Layout(events)
+	nColumns, columns := layout.Layout(events, 16) // 16 is an arbitrary number, 16px seems ok (:
 
 	s.renderTemplate("day.html", w, r, map[string]interface{}{
 		"date":     date,
