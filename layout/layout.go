@@ -1,6 +1,7 @@
 package layout
 
 import (
+	"log"
 	"sort"
 )
 
@@ -26,6 +27,9 @@ func Layout[T Box](boxes []T, minHeight int) (nColumns int, columns []int) {
 	// make sure each box does not overlap with each other
 	for i, box := range boxes {
 		top, height := box.Layout()
+		if height < 0 {
+			log.Printf("warning: negative height provided by %T %v %#v", box, box, box)
+		}
 		height = max(height, minHeight)
 		column := 0
 		for columnBottoms[column] > top {
