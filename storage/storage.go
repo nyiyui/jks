@@ -28,6 +28,12 @@ type Activity struct {
 	Note      string
 }
 
+func (a Activity) Layout() (top int, height int) {
+	start := a.TimeStart.Unix()
+	end := a.TimeEnd.Unix()
+	return int(start), int(end - start)
+}
+
 type Plan struct {
 	ID     int64
 	TaskID int64
@@ -38,6 +44,12 @@ type Plan struct {
 	TimeBefore  time.Time
 	DurationGe  time.Duration
 	DurationLt  time.Duration
+}
+
+func (p Plan) Layout() (top int, height int) {
+	start := p.TimeBefore.Unix()
+	end := p.TimeAtAfter.Unix()
+	return int(start), int(end - start)
 }
 
 type Storage interface {

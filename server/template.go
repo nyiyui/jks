@@ -17,6 +17,8 @@ import (
 	"github.com/google/safehtml/uncheckedconversions"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
+	"nyiyui.ca/jks/layout"
+	"nyiyui.ca/jks/storage"
 )
 
 //go:embed layouts
@@ -65,15 +67,29 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 	t := template.New(basename).
 		Funcs(template.FuncMap(sprig.FuncMap())).
 		Funcs(template.FuncMap{
+			"isActivity": func(v layout.Box) bool {
+				_, ok := v.(storage.Activity)
+				return ok
+			},
+			"isPlan": func(v layout.Box) bool {
+				_, ok := v.(storage.Plan)
+				return ok
+			},
+			"toActivity": func(v layout.Box) storage.Activity {
+				return v.(storage.Activity)
+			},
+			"toPlan": func(v layout.Box) storage.Plan {
+				return v.(storage.Plan)
+			},
 			"styleTopHeight": func(top, height string) safehtml.Style {
 				return safehtml.StyleFromProperties(safehtml.StyleProperties{
 					Top:    top,
 					Height: height,
 				})
 			},
-			"genRange": func(count uint) []uint {
-				items := make([]uint, count)
-				for i := uint(0); i < count; i++ {
+			"genRange": func(count int) []int {
+				items := make([]int, count)
+				for i := 0; i < count; i++ {
 					items[i] = i
 				}
 				return items

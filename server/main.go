@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/safehtml/template"
 
+	"nyiyui.ca/jks/layout"
 	"nyiyui.ca/jks/storage"
 )
 
@@ -574,11 +575,22 @@ func (s *Server) dayView(w http.ResponseWriter, r *http.Request) {
 		tasksByID[t.ID] = t
 	}
 
+	events := make([]layout.Box, len(as)+len(ps))
+	for i, a := range as {
+		events[i] = a
+	}
+	for i, p := range ps {
+		events[len(as)+i] = p
+	}
+
+	nColumns, columns := layout.Layout(as)
+
 	s.renderTemplate("day.html", w, r, map[string]interface{}{
-		"date":       date,
-		"activities": as,
-		"tasks":      tasksByID,
-		"plans":      ps,
+		"date":     date,
+		"events":   events,
+		"tasks":    tasksByID,
+		"nColumns": nColumns,
+		"columns":  columns,
 	})
 	if err != nil {
 		log.Printf("template: %s", err)
