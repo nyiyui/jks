@@ -9,7 +9,10 @@
     position: relative;
     z-index: 1;
     border-radius: 8px;
-    margin-left: 4rem;
+  }
+
+  .hour-spacer {
+    width: 6rem;
   }
 
   .activity {
@@ -110,6 +113,8 @@
   {{ range $i, $plan := .plans }}
   {{ end }}
   <div class="layer events">
+    <div class="column hour-spacer">
+    </div>
     {{ range $currentColumn := genRange .nColumns }}
     <div class="column">
       {{ range $i, $event := $.events }}
