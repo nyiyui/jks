@@ -5,6 +5,7 @@ Edit {{ .task.QuickTitle }}
 {{ define "body" }}
 <nav>
   <span>{{ template "title" . }}</span>
+  <a href="/task/{{ .task.ID }}">View</a>
   <a href="/task/{{ .task.ID }}/activity/new">Add Activity</a>
   <a href="/task/{{ .task.ID }}/plan/new">Add Plan</a>
 </nav>
