@@ -33,6 +33,7 @@ type Server struct {
 	oauthConfig *oauth2.Config
 	store       sessions.Store
 	mainUser    string
+	decoder     *schema.Decoder
 }
 
 func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string) (*Server, error) {
@@ -43,6 +44,21 @@ func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, a
 		store:       store,
 		mainUser:    adminUser,
 	}
+	s.decoder = schema.NewDecoder()
+	s.decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
+		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
+		if err != nil {
+			return reflect.ValueOf(time.Now())
+		}
+		return reflect.ValueOf(t)
+	})
+	s.decoder.RegisterConverter(time.Duration(0), func(s string) reflect.Value {
+		d, err := time.ParseDuration(s)
+		if err != nil {
+			return reflect.ValueOf(time.Duration(0))
+		}
+		return reflect.ValueOf(d)
+	})
 	err := s.setup()
 	return s, err
 }
@@ -179,15 +195,7 @@ func (s *Server) taskNewPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var parsed storage.Task
-	decoder := schema.NewDecoder()
-	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
-		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
-		if err != nil {
-			return reflect.ValueOf(time.Now())
-		}
-		return reflect.ValueOf(t)
-	})
-	err = decoder.Decode(&parsed, r.PostForm)
+	err = s.decoder.Decode(&parsed, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -237,15 +245,7 @@ func (s *Server) taskNewActivityNewPost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var parsed taskNewActivityNewQ
-	decoder := schema.NewDecoder()
-	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
-		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
-		if err != nil {
-			return reflect.ValueOf(time.Now())
-		}
-		return reflect.ValueOf(t)
-	})
-	err = decoder.Decode(&parsed, r.PostForm)
+	err = s.decoder.Decode(&parsed, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -317,19 +317,10 @@ func (s *Server) taskActivityNewPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	decoder := schema.NewDecoder()
-	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
-		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
-		if err != nil {
-			return reflect.ValueOf(time.Now())
-		}
-		return reflect.ValueOf(t)
-	})
-
 	planID := r.PostForm.Get("PlanID")
 	delete(r.PostForm, "PlanID")
 
-	err = decoder.Decode(&a, r.PostForm)
+	err = s.decoder.Decode(&a, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -410,22 +401,7 @@ func (s *Server) taskPlanNewPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	decoder := schema.NewDecoder()
-	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
-		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
-		if err != nil {
-			return reflect.ValueOf(time.Now())
-		}
-		return reflect.ValueOf(t)
-	})
-	decoder.RegisterConverter(time.Duration(0), func(s string) reflect.Value {
-		d, err := time.ParseDuration(s)
-		if err != nil {
-			return reflect.ValueOf(time.Duration(0))
-		}
-		return reflect.ValueOf(d)
-	})
-	err = decoder.Decode(&p, r.PostForm)
+	err = s.decoder.Decode(&p, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
