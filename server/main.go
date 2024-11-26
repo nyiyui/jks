@@ -217,7 +217,7 @@ func (s *Server) taskEdit(w http.ResponseWriter, r *http.Request) {
 	for _, a := range as {
 		totalSpent += a.TimeEnd.Sub(a.TimeStart)
 	}
-	s.renderTemplate("task.html", w, r, map[string]interface{}{
+	s.renderTemplate("task-edit.html", w, r, map[string]interface{}{
 		"task":       t,
 		"activities": as,
 		"totalSpent": totalSpent,
