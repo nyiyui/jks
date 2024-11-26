@@ -270,6 +270,17 @@ func (d *Database) TaskAdd(v storage.Task, ctx context.Context) (id int64, err e
 	return
 }
 
+func (d *Database) TaskEdit(v storage.Task, ctx context.Context) error {
+	_, err := d.DB.Exec(`UPDATE tasks SET description = ?, quick_title = ?, deadline = ?, due = ? WHERE id = ?`,
+		v.Description,
+		v.QuickTitle,
+		v.Deadline,
+		v.Due,
+		v.ID,
+	)
+	return err
+}
+
 func (d *Database) ActivityRange(a, b time.Time, ctx context.Context) (storage.Window[storage.Activity], error) {
 	return &window2{d, a, b, ctx}, nil
 }

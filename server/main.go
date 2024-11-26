@@ -76,6 +76,8 @@ func (s *Server) setup() error {
 	s.mux.Handle("GET /task/new", composeFunc(s.taskNew, s.mainLogin))
 	s.mux.Handle("POST /task/new", composeFunc(s.taskNewPost, s.mainLogin))
 	s.mux.Handle("GET /task/{id}", composeFunc(s.taskView, s.mainLogin))
+	s.mux.Handle("GET /task/{id}/edit", composeFunc(s.taskEdit, s.mainLogin))
+	s.mux.Handle("POST /task/{id}/edit", composeFunc(s.taskEditPost, s.mainLogin))
 	s.mux.Handle("GET /task/{id}/activity/new", composeFunc(s.taskActivityNew, s.mainLogin))
 	s.mux.Handle("POST /task/{id}/activity/new", composeFunc(s.taskActivityNewPost, s.mainLogin))
 	s.mux.Handle("GET /task/new/activity/new", composeFunc(s.taskNewActivityNew, s.mainLogin))
@@ -179,6 +181,77 @@ func (s *Server) taskView(w http.ResponseWriter, r *http.Request) {
 		"activities": as,
 		"totalSpent": totalSpent,
 	})
+	return
+}
+
+func (s *Server) taskEdit(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	t, err := s.st.TaskGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	asw, err := s.st.TaskGetActivities(id, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	defer asw.Close()
+	as, err := asw.Get(100, 0)
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	if len(as) == 100 {
+		http.Error(w, "too many activities", 500)
+		return
+	}
+	var totalSpent time.Duration
+	for _, a := range as {
+		totalSpent += a.TimeEnd.Sub(a.TimeStart)
+	}
+	s.renderTemplate("task.html", w, r, map[string]interface{}{
+		"task":       t,
+		"activities": as,
+		"totalSpent": totalSpent,
+	})
+	return
+}
+
+func (s *Server) taskEditPost(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+
+	err = r.ParseForm()
+	if err != nil {
+		http.Error(w, "parsing form data failed", 400)
+		return
+	}
+
+	var parsed storage.Task
+	err = s.decoder.Decode(&parsed, r.PostForm)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
+		return
+	}
+	parsed.ID = id
+	err = s.st.TaskEdit(parsed, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/task/%d/edit", id), 302)
 	return
 }
 

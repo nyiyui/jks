@@ -69,6 +69,7 @@ type Storage interface {
 	TaskGetPlans(id int64, limit, offset int, ctx context.Context) ([]Plan, error)
 	TaskSearch(query string, undoneAt time.Time, ctx context.Context) (Window[Task], error)
 	TaskAdd(t Task, ctx context.Context) (id int64, err error)
+	TaskEdit(t Task, ctx context.Context) error
 
 	// Range returns activities and plans returned by PlanRange and ActivityRange.
 	// Tasks are the tasks referred to by each activity and plan.
