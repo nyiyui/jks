@@ -20,13 +20,13 @@ Edit {{ .task.QuickTitle }}
   </label>
   <label>
     Deadline
-    <input type="datetime-local" name="Deadline" value="{{ .task.Deadline }}" />
+    <input type="datetime-local" name="Deadline" value="{{ .task.Deadline | formatDatetimeLocal }}" />
   </label>
   <label>
     Due
-    <input type="datetime-local" name="Due" value="{{ .task.Due }}" />
+    <input type="datetime-local" name="Due" value="{{ .task.Due | formatDatetimeLocal }}" />
   </label>
-  <input type="submit" value="Add" />
+  <input type="submit" value="Edit" />
 </form>
 <section id="activities">
   <h2>Activities</h2>
