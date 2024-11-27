@@ -28,6 +28,15 @@ Activity for {{ .task.QuickTitle }}
   {{ else }}
   Not Done
   {{ end }}
+  {{ if ge .activity.TimeEnd.Unix (sub now.Unix 86400) }}
+  <form action="/activity/{{ .activity.ID }}/extend" method="post">
+    <label>
+      New End
+      <input type="time" name="time_end" value="{{ now.Format "15:04" }}" />
+    </label>
+    <input type="submit" value="Extend" />
+  </form>
+  {{ end }}
 </aside>
 {{ $body := splitNoteBody .activity.Note }}
 {{ renderMarkdown $body }}
