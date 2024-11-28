@@ -60,8 +60,8 @@
 {{ end }}
 {{ define "body" }}
 {{ $compressionFactor := 60 }}
-<h1>{{ template "title" . }}</h1>
 <nav>
+  {{ template "title" . }}
   <a href="/day/{{ (.date.AddDate 0 0 -1).Format "2006-01-02" }}">
     ←
     {{ (.date.AddDate 0 0 -1).Format "2006-01-02" }}
