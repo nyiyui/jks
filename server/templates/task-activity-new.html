@@ -13,6 +13,7 @@ New Activity for {{ .task.QuickTitle }}
     <select name="PlanID">
       <option value="">None</option>
       {{ range $i, $plan := .plans }}
+      {{ if eq $plan.ActivityID 0 }}
       <option {{ if eq $i $.selectedPlan }}selected{{ end }} value="{{ $plan.ID }}">
         {{ $plan.TimeAtAfter.Local.Format "15:04" }}
         to
@@ -22,6 +23,7 @@ New Activity for {{ .task.QuickTitle }}
         {{ $plan.Location }}
         {{ end }}
       </option>
+      {{ end }}
       {{ end }}
     </select>
   </label>
