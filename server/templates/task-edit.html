@@ -9,7 +9,7 @@ Edit {{ .task.QuickTitle }}
   <a href="/task/{{ .task.ID }}/activity/new">Add Activity</a>
   <a href="/task/{{ .task.ID }}/plan/new">Add Plan</a>
 </nav>
-<form action="/task/new" method="post">
+<form action="/task/{{ .task.ID }}/new" method="post">
   <label>
     Quick Title
     <input type="text" name="QuickTitle" value="{{ .task.QuickTitle }}" />
