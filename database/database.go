@@ -211,7 +211,8 @@ const deadlineWhere = `(deadline IS NULL OR UNIXEPOCH(deadline) >= ?)`
 const queryWhere = `(quick_title like ? OR description like ?)`
 const notDoneJoinWhere = `
 JOIN activity_log ON (tasks.id = activity_log.task_id)
-WHERE NOT EXISTS (SELECT * FROM activity_log WHERE activity_log.task_id = tasks.id AND activity_log.status != 3)
+WHERE activity_log.time_end = (SELECT MAX(time_end) FROM activity_log WHERE activity_log.task_id = tasks.id)
+AND activity_log.status != 3
 `
 const unionNoLogs = `
 WHERE NOT EXISTS (SELECT * FROM activity_log WHERE activity_log.task_id = tasks.id)
