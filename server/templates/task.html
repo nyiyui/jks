@@ -36,4 +36,18 @@
     {{ end }}
   </ol>
 </section>
+<section id="plans">
+  <h2>Plans</h2>
+  <ol>
+    {{ range $i, $plan := .plans }}
+    <li><a href="/plan/{{ $plan.ID }}">
+        Plan from {{ $plan.TimeAtAfter | formatUser }} to {{ $plan.TimeBefore | formatUser }}
+        {{ if ne $plan.Location "" }}
+        at {{ $plan.Location }}
+        {{ end }}
+        ({{ $plan.DurationGe }} to {{ $plan.DurationLt }})
+    </a></li>
+    {{ end }}
+  </ol>
+</section>
 {{ end }}

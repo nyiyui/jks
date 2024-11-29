@@ -172,6 +172,16 @@ func (s *Server) taskView(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "too many activities", 500)
 		return
 	}
+	ps, err := s.st.TaskGetPlans(id, 100, 0, r.Context())
+	if err != nil {
+		log.Printf("storage: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	if len(ps) == 100 {
+		http.Error(w, "too many plans", 500)
+		return
+	}
 	var totalSpent time.Duration
 	for _, a := range as {
 		totalSpent += a.TimeEnd.Sub(a.TimeStart)
@@ -179,6 +189,7 @@ func (s *Server) taskView(w http.ResponseWriter, r *http.Request) {
 	s.renderTemplate("task.html", w, r, map[string]interface{}{
 		"task":       t,
 		"activities": as,
+		"plans":      ps,
 		"totalSpent": totalSpent,
 	})
 	return
