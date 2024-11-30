@@ -10,6 +10,7 @@ Activity for {{ .task.QuickTitle }}
 {{ define "body" }}
 <nav>
   <span>{{ template "title" . }}</span>
+  <a href="/activity/{{ .activity.ID }}/edit">Edit</a>
   <a href="/task/{{ .task.ID }}">Task</a>
 </nav>
 <aside>

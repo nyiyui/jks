@@ -1,0 +1,45 @@
+{{ template "base.html" $ }}
+{{ define "title" }}
+{{ if eq "" .activity.Note }}
+Edit Activity for {{ .task.QuickTitle }}
+{{ else }}
+{{ $title := splitNoteTitle .activity.Note }}
+Edit {{ $title }}
+{{ end }}
+{{ end }}
+{{ define "body" }}
+{{ $now := now | formatDatetimeLocal }}
+<nav>
+  <span>{{ template "title" . }}</span>
+  <a href="/activity/{{ .activity.ID }}">View</a>
+  <a href="/task/{{ .task.ID }}">Task</a>
+</nav>
+<form action="/activity/{{ .activity.ID }}/edit" method="post">
+  <label>
+    Location
+    <input
+      type="text"
+      name="Location"
+      value="{{ .activity.Location }}"
+    />
+  </label>
+  <label>
+    Start
+    <input type="datetime-local" name="TimeStart" value="{{ .activity.TimeStart.Local | formatDatetimeLocal }}" />
+  </label>
+  <label>
+    End
+    <input type="datetime-local" name="TimeEnd" value="{{ .activity.TimeEnd.Local | formatDatetimeLocal }}" />
+  </label>
+  <label>
+    <input type="checkbox" name="Done" />
+    Task is done with this activity
+  </label>
+  <label>
+    Note
+    <textarea name="Note">{{ .activity.Note }}</textarea>
+  </label>
+  <input type="submit" value="Edit" />
+</form>
+{{ end }}
+

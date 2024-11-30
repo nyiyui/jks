@@ -73,6 +73,8 @@ func (s *Server) setup() error {
 
 	s.mux.Handle("GET /undone-tasks", composeFunc(s.undoneTasks, s.mainLogin))
 	s.mux.Handle("GET /activity/{id}", composeFunc(s.activityView, s.mainLogin))
+	s.mux.Handle("GET /activity/{id}/edit", composeFunc(s.activityEdit, s.mainLogin))
+	s.mux.Handle("POST /activity/{id}/edit", composeFunc(s.activityEditPost, s.mainLogin))
 	s.mux.Handle("GET /task/new", composeFunc(s.taskNew, s.mainLogin))
 	s.mux.Handle("POST /task/new", composeFunc(s.taskNewPost, s.mainLogin))
 	s.mux.Handle("GET /task/{id}", composeFunc(s.taskView, s.mainLogin))
@@ -140,6 +142,67 @@ func (s *Server) activityView(w http.ResponseWriter, r *http.Request) {
 		"activity": a,
 		"task":     t,
 	})
+	return
+}
+
+func (s *Server) activityEdit(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	a, err := s.st.ActivityGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: activity get: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	t, err := s.st.TaskGet(a.TaskID, r.Context())
+	if err != nil {
+		log.Printf("storage: task get: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	s.renderTemplate("activity-edit.html", w, r, map[string]interface{}{
+		"activity": a,
+		"task":     t,
+	})
+	return
+}
+
+func (s *Server) activityEditPost(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, "id must be int", 422)
+		return
+	}
+	err = r.ParseForm()
+	if err != nil {
+		http.Error(w, "parsing form data failed", 400)
+		return
+	}
+	a, err := s.st.ActivityGet(id, r.Context())
+	if err != nil {
+		log.Printf("storage: activity get: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+
+	var parsed storage.Activity
+	err = s.decoder.Decode(&parsed, r.PostForm)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
+		return
+	}
+	parsed.ID = id
+	parsed.TaskID = a.TaskID // do not allow changing task ID
+	err = s.st.ActivityEdit(parsed, r.Context())
+	if err != nil {
+		log.Printf("storage: activity edit: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	http.Redirect(w, r, fmt.Sprintf("/activity/%d", id), 302)
 	return
 }
 
@@ -262,7 +325,7 @@ func (s *Server) taskEditPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/task/%d/edit", id), 302)
+	http.Redirect(w, r, fmt.Sprintf("/task/%d", id), 302)
 	return
 }
 
