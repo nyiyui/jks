@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -21,6 +22,8 @@ import (
 	"nyiyui.ca/jks/storage"
 )
 
+var buildInfo debug.BuildInfo
+
 //go:embed layouts
 var layoutsFS embed.FS
 
@@ -28,6 +31,13 @@ var layoutsFS embed.FS
 var templatesFS embed.FS
 
 type stringConstant string
+
+func init() {
+	buildInfo2, _ := debug.ReadBuildInfo()
+	if buildInfo2 != nil {
+		buildInfo = *buildInfo2
+	}
+}
 
 func (s *Server) renderTemplate(path stringConstant, w http.ResponseWriter, r *http.Request, data map[string]interface{}) {
 	t, ok := s.tps[string(path)]
@@ -125,6 +135,9 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 					return ""
 				}
 				return lines[1]
+			},
+			"buildInfo": func() debug.BuildInfo {
+				return buildInfo
 			},
 		})
 	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "layouts/*.html")
