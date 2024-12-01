@@ -24,7 +24,7 @@
             pname = "jks";
             version = if (self ? rev) then self.rev else "dirty";
             src = ./.;
-            vendorHash = "sha256-7LfWETUR3A6SKuLoT8vAsem6zI5hl9OvE0HqxZtCXNQ=";
+            vendorHash = "sha256-NBZRh/J7DS+IGq1zxo85tfiOUcpqBSku/CudHzsSVmY=";
             subPackages = [ "cmd/server" ];
           });
       in
@@ -37,16 +37,6 @@
             sqlite
             sqlitebrowser
             flutter
-          ];
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-            libGL
-            xorg.libX11.dev
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXinerama
-            xorg.libXrandr
-            xorg.libXxf86vm
           ];
         };
         packages.jks = build-jks pkgs;
