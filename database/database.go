@@ -92,6 +92,8 @@ func (d *Database) ActivityEdit(a storage.Activity, ctx context.Context) error {
 	var status Status
 	if a.Done {
 		status = StatusDone
+	} else if orig.Status == StatusDone {
+		status = StatusInProgress
 	} else {
 		status = orig.Status
 	}
