@@ -12,15 +12,20 @@ import (
 	"golang.org/x/oauth2/github"
 
 	"nyiyui.ca/jks/database"
+	"nyiyui.ca/jks/rdf"
 	"nyiyui.ca/jks/server"
 )
 
 func main() {
 	var dbPath string
 	var bindAddress string
+	var baseURI string
 	flag.StringVar(&dbPath, "db-path", "db.sqlite3", "path to database")
 	flag.StringVar(&bindAddress, "bind", "127.0.0.1:8080", "bind address")
+	flag.StringVar(&baseURI, "base-uri", "http://127.0.0.1/", "base URI for RDF")
 	flag.Parse()
+
+	serializer := rdf.NewSerializer(baseURI)
 
 	log.Printf("opening database...")
 	db, err := database.Open(dbPath)
@@ -45,7 +50,7 @@ func main() {
 		Scopes:       []string{},
 		Endpoint:     github.Endpoint,
 		RedirectURL:  os.Getenv("JKS_OAUTH_REDIRECT_URI"),
-	}, store, "nyiyui")
+	}, store, "nyiyui", serializer)
 	if err != nil {
 		panic(err)
 	}

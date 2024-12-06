@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/deiu/rdf2go"
 	"github.com/gorilla/schema"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
@@ -15,6 +16,7 @@ import (
 	"github.com/google/safehtml/template"
 
 	"nyiyui.ca/jks/layout"
+	"nyiyui.ca/jks/rdf"
 	"nyiyui.ca/jks/storage"
 )
 
@@ -34,15 +36,17 @@ type Server struct {
 	store       sessions.Store
 	mainUser    string
 	decoder     *schema.Decoder
+	serializer  *rdf.Serializer
 }
 
-func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string) (*Server, error) {
+func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer) (*Server, error) {
 	s := &Server{
 		mux:         http.NewServeMux(),
 		st:          st,
 		oauthConfig: oauthConfig,
 		store:       store,
 		mainUser:    adminUser,
+		serializer:  serializer,
 	}
 	s.decoder = schema.NewDecoder()
 	s.decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
@@ -70,6 +74,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) setup() error {
 	s.mux.HandleFunc("GET /login", s.login)
 	s.mux.HandleFunc("GET /login/callback", s.loginCallback)
+
+	s.mux.Handle("GET /rdf/all", composeFunc(s.getRDF, s.mainLogin))
 
 	s.mux.Handle("GET /undone-tasks", composeFunc(s.undoneTasks, s.mainLogin))
 	s.mux.Handle("GET /activity/{id}", composeFunc(s.activityView, s.mainLogin))
@@ -728,4 +734,84 @@ func (s *Server) makeDayViewDelta(days int) http.HandlerFunc {
 		date := time.Now().AddDate(0, 0, days).Format("2006-01-02")
 		http.Redirect(w, r, fmt.Sprintf("/day/%s", date), 302)
 	}
+}
+
+func mergeWindowToGraph[T any](w storage.Window[T], g *rdf2go.Graph, serializer func(T) (*rdf2go.Graph, rdf2go.Term)) error {
+	const windowLength = 100
+	for offset := 0; ; offset += windowLength {
+		ts, err := w.Get(windowLength, offset)
+		if err != nil {
+			return err
+		}
+		for _, t := range ts {
+			subG, _ := serializer(t)
+			g.Merge(subG)
+		}
+		if len(ts) < 100 {
+			break
+		}
+	}
+	return nil
+}
+
+func (s *Server) getRDF(w http.ResponseWriter, r *http.Request) {
+	accept := r.Header.Get("Accept")
+	if accept == "text/turtle" || accept == "application/ld+json" {
+		w.Header().Set("Content-Type", accept)
+	} else {
+		accept = "text/turtle"
+	}
+
+	g := rdf2go.NewGraph(s.serializer.GraphURI())
+
+	// === Task ===
+	tw, err := s.st.TaskSearch("", time.Now(), r.Context())
+	if err != nil {
+		log.Printf("storage: storage: initial: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	err = mergeWindowToGraph(tw, g, s.serializer.TaskToRDF)
+	if err != nil {
+		log.Printf("storage: storage: merge: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+
+	// === Activity ===
+	aw, err := s.st.ActivityRange(time.Time{}, time.Now(), r.Context())
+	if err != nil {
+		log.Printf("storage: activity: initial: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	err = mergeWindowToGraph(aw, g, s.serializer.ActivityToRDF)
+	if err != nil {
+		log.Printf("storage: activity: merge: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+
+	// === Plan ===
+	pw, err := s.st.PlanRange(time.Time{}, time.Now(), r.Context())
+	if err != nil {
+		log.Printf("storage: plan: initial: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+	err = mergeWindowToGraph(pw, g, s.serializer.PlanToRDF)
+	if err != nil {
+		log.Printf("storage: plan: merge: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+
+	w.Header().Set("Content-Type", fmt.Sprintf("%s; charset=utf-8", accept))
+	err = g.Serialize(w, accept)
+	if err != nil {
+		log.Printf("rdf serialization: %s", err)
+		http.Error(w, "rdf serialization error", 500)
+		return
+	}
+	return
 }
