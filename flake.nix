@@ -24,7 +24,7 @@
             pname = "jks";
             version = if (self ? rev) then self.rev else "dirty";
             src = ./.;
-            vendorHash = "sha256-NBZRh/J7DS+IGq1zxo85tfiOUcpqBSku/CudHzsSVmY=";
+            vendorHash = "sha256-LFK6qrNw4NUBPcGCbgvFeH0QGSKoS054y+OcxMm+w6M=";
             subPackages = [ "cmd/server" ];
           });
       in
