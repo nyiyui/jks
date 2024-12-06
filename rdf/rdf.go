@@ -19,7 +19,7 @@ func mustJoinPath(base string, elem ...string) string {
 
 var rdfType = rdf2go.NewResource("rdf:type")
 
-var xsdDateTimeStamp = rdf2go.NewResource("http://www.w3.org/2001/XMLSchema#dateTimeStamp")
+var xsdDateTime = rdf2go.NewResource("http://www.w3.org/2001/XMLSchema#dateTime")
 var xsdBoolean = rdf2go.NewResource("http://www.w3.org/2001/XMLSchema#boolean")
 
 var jksBaseURI = "https://nyiyui.ca/jks/"
@@ -82,10 +82,10 @@ func (s *Serializer) TaskToRDF(t storage.Task) (*rdf2go.Graph, rdf2go.Term) {
 	g.AddTriple(subject, s.description, rdf2go.NewLiteral(t.Description))
 	g.AddTriple(subject, s.quickTitle, rdf2go.NewLiteral(t.QuickTitle))
 	if t.Deadline != nil {
-		g.AddTriple(subject, s.deadline, rdf2go.NewLiteralWithDatatype(t.Deadline.Format(time.RFC3339), xsdDateTimeStamp))
+		g.AddTriple(subject, s.deadline, rdf2go.NewLiteralWithDatatype(t.Deadline.Format(time.RFC3339), xsdDateTime))
 	}
 	if t.Due != nil {
-		g.AddTriple(subject, s.due, rdf2go.NewLiteralWithDatatype(t.Due.Format(time.RFC3339), xsdDateTimeStamp))
+		g.AddTriple(subject, s.due, rdf2go.NewLiteralWithDatatype(t.Due.Format(time.RFC3339), xsdDateTime))
 	}
 	return g, subject
 }
@@ -97,8 +97,8 @@ func (s *Serializer) ActivityToRDF(a storage.Activity) (*rdf2go.Graph, rdf2go.Te
 	g.AddTriple(subject, rdfType, s.activityURI)
 	g.AddTriple(subject, s.forTask, rdf2go.NewResource(mustJoinPath(s.baseURI, "tasks", fmt.Sprint(a.TaskID))))
 	g.AddTriple(subject, s.location, rdf2go.NewLiteral(a.Location))
-	g.AddTriple(subject, s.timeStart, rdf2go.NewLiteralWithDatatype(a.TimeStart.Format(time.RFC3339), xsdDateTimeStamp))
-	g.AddTriple(subject, s.timeEnd, rdf2go.NewLiteralWithDatatype(a.TimeEnd.Format(time.RFC3339), xsdDateTimeStamp))
+	g.AddTriple(subject, s.timeStart, rdf2go.NewLiteralWithDatatype(a.TimeStart.Format(time.RFC3339), xsdDateTime))
+	g.AddTriple(subject, s.timeEnd, rdf2go.NewLiteralWithDatatype(a.TimeEnd.Format(time.RFC3339), xsdDateTime))
 	g.AddTriple(subject, s.done, boolToRDF(a.Done))
 	return g, subject
 }
@@ -110,9 +110,9 @@ func (s *Serializer) PlanToRDF(p storage.Plan) (*rdf2go.Graph, rdf2go.Term) {
 	g.AddTriple(subject, rdfType, s.planURI)
 	g.AddTriple(subject, s.forTask, rdf2go.NewResource(mustJoinPath(s.baseURI, "tasks", fmt.Sprint(p.TaskID))))
 	g.AddTriple(subject, s.location, rdf2go.NewLiteral(p.Location))
-	g.AddTriple(subject, s.timeStart, rdf2go.NewLiteralWithDatatype(p.TimeAtAfter.Format(time.RFC3339), xsdDateTimeStamp))
-	g.AddTriple(subject, s.timeEnd, rdf2go.NewLiteralWithDatatype(p.TimeBefore.Format(time.RFC3339), xsdDateTimeStamp))
-	g.AddTriple(subject, s.durationGe, rdf2go.NewLiteralWithDatatype(p.DurationGe.String(), xsdDateTimeStamp))
-	g.AddTriple(subject, s.durationLt, rdf2go.NewLiteralWithDatatype(p.DurationLt.String(), xsdDateTimeStamp))
+	g.AddTriple(subject, s.timeStart, rdf2go.NewLiteralWithDatatype(p.TimeAtAfter.Format(time.RFC3339), xsdDateTime))
+	g.AddTriple(subject, s.timeEnd, rdf2go.NewLiteralWithDatatype(p.TimeBefore.Format(time.RFC3339), xsdDateTime))
+	g.AddTriple(subject, s.durationGe, rdf2go.NewLiteralWithDatatype(p.DurationGe.String(), xsdDateTime))
+	g.AddTriple(subject, s.durationLt, rdf2go.NewLiteralWithDatatype(p.DurationLt.String(), xsdDateTime))
 	return g, subject
 }
