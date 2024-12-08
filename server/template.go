@@ -114,19 +114,19 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				}
 				return uncheckedconversions.HTMLFromStringKnownToSatisfyTypeContract(buf.String()), nil
 			},
-			"formatDayLong": func(t time.Time, loc *time.Location) string {
+			"formatDayLong": func(loc *time.Location, t time.Time) string {
 				return t.In(loc).Format("2006-01-02 Mon")
 			},
-			"formatDay": func(t time.Time, loc *time.Location) string {
+			"formatDay": func(loc *time.Location, t time.Time) string {
 				return t.In(loc).Format("2006-01-02")
 			},
-			"formatHM": func(t time.Time, loc *time.Location) string {
+			"formatHM": func(loc *time.Location, t time.Time) string {
 				return t.In(loc).Format("15:04")
 			},
-			"formatDatetimeLocalHTML": func(t time.Time, loc *time.Location) string {
+			"formatDatetimeLocalHTML": func(loc *time.Location, t time.Time) string {
 				return t.In(loc).Format("2006-01-02T15:04")
 			},
-			"formatUser": func(t time.Time, loc *time.Location) string {
+			"formatUser": func(loc *time.Location, t time.Time) string {
 				t = t.In(loc)
 				abs := t.Format("2006-01-02 15:04")
 				rel := t.Sub(time.Now()).Round(time.Minute)
