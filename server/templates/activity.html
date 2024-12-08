@@ -15,11 +15,11 @@ Activity for {{ .task.QuickTitle }}
 </nav>
 <aside>
   {{ if .activity.TimeStart }}
-  {{ .activity.TimeStart | formatUser }}
+  {{ .activity.TimeStart | formatUser tzloc }}
   {{ end }}
   to
   {{ if .activity.TimeEnd }}
-  {{ .activity.TimeEnd | formatUser }}
+  {{ .activity.TimeEnd | formatUser tzloc }}
   {{ end }}
   <br />
   Location: {{ .activity.Location }}
@@ -33,7 +33,7 @@ Activity for {{ .task.QuickTitle }}
   <form action="/activity/{{ .activity.ID }}/extend" method="post">
     <label>
       New End
-      <input type="time" name="time_end" value="{{ now.Format "15:04" }}" />
+      <input type="time" name="time_end" value="{{ now | formatHM tzloc }}" />
     </label>
     <input type="submit" value="Extend" />
   </form>

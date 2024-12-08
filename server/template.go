@@ -49,6 +49,7 @@ func (s *Server) renderTemplate(path stringConstant, w http.ResponseWriter, r *h
 		data = map[string]interface{}{}
 	}
 	data["login"], _ = r.Context().Value(LoginUserDataKey).(githubUserData)
+	data["tzloc"] = getTimeLocation(r)
 	err := t.Execute(w, data)
 	if err != nil {
 		log.Printf("template error: %s", err)
@@ -113,10 +114,20 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				}
 				return uncheckedconversions.HTMLFromStringKnownToSatisfyTypeContract(buf.String()), nil
 			},
-			"formatDatetimeLocal": func(t time.Time) string {
-				return t.Format("2006-01-02T15:04")
+			"formatDayLong": func(t time.Time, loc *time.Location) string {
+				return t.In(loc).Format("2006-01-02 Mon")
 			},
-			"formatUser": func(t time.Time) string {
+			"formatDay": func(t time.Time, loc *time.Location) string {
+				return t.In(loc).Format("2006-01-02")
+			},
+			"formatHM": func(t time.Time, loc *time.Location) string {
+				return t.In(loc).Format("15:04")
+			},
+			"formatDatetimeLocalHTML": func(t time.Time, loc *time.Location) string {
+				return t.In(loc).Format("2006-01-02T15:04")
+			},
+			"formatUser": func(t time.Time, loc *time.Location) string {
+				t = t.In(loc)
 				abs := t.Format("2006-01-02 15:04")
 				rel := t.Sub(time.Now()).Round(time.Minute)
 				rel2 := rel.String()

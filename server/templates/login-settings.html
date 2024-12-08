@@ -1,0 +1,19 @@
+{{ template "base.html" $ }}
+{{ define "title" }}
+Session Settings
+{{ end }}
+{{ define "body" }}
+Logged in as:
+<a href="{{ .login.HTMLURL }}">
+<img src="{{ .login.AvatarURL }}" alt="avatar" />
+{{ .login.Login }}
+</a>
+<form action="/login/settings" method="post">
+  <label>
+    Timezone
+    <input type="text" name="timezone" value="{{ .timezone }}" />
+  </label>
+  <button type="submit">Save</button>
+</form>
+{{ end }}
+

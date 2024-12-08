@@ -1,7 +1,7 @@
 {{ template "base.html" $ }}
 {{ define "title" }}New Task{{ end }}
 {{ define "body" }}
-{{ $now := now | formatDatetimeLocal }}
+{{ $now := now | formatDatetimeLocalHTML tzloc }}
 <form action="/task/new" method="post">
   <label>
     Quick Title

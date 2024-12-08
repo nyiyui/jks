@@ -8,7 +8,7 @@ Edit {{ $title }}
 {{ end }}
 {{ end }}
 {{ define "body" }}
-{{ $now := now | formatDatetimeLocal }}
+{{ $now := now | formatDatetimeLocalHTML tzloc }}
 <nav>
   <span>{{ template "title" . }}</span>
   <a href="/activity/{{ .activity.ID }}">View</a>
@@ -25,11 +25,11 @@ Edit {{ $title }}
   </label>
   <label>
     Start
-    <input type="datetime-local" name="TimeStart" value="{{ .activity.TimeStart.Local | formatDatetimeLocal }}" />
+    <input type="datetime-local" name="TimeStart" value="{{ .activity.TimeStart | formatDatetimeLocalHTML tzloc }}" />
   </label>
   <label>
     End
-    <input type="datetime-local" name="TimeEnd" value="{{ .activity.TimeEnd.Local | formatDatetimeLocal }}" />
+    <input type="datetime-local" name="TimeEnd" value="{{ .activity.TimeEnd | formatDatetimeLocalHTML tzloc }}" />
   </label>
   <label>
     <input type="checkbox" name="Done" />

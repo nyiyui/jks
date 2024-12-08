@@ -48,11 +48,14 @@
     <nav id="nav-main">
       <a href="/activity/latest">Latest</a>
       <a href="/day/today">Today</a>
+      <a href="/day/tomorrow">Tomorrow</a>
       <a href="/undone-tasks">Undone</a>
       <a href="/task/new">New Task</a>
+      <a href="/task/new/activity/new">New Task with Activity</a>
       {{ if .login }}
       <span class="right">
       {{ .login.Login }}
+      (<a href="/login/settings">Settings</a>)
       </span>
       {{ end }}
     </nav>

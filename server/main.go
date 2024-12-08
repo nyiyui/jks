@@ -35,8 +35,27 @@ type Server struct {
 	oauthConfig *oauth2.Config
 	store       sessions.Store
 	mainUser    string
-	decoder     *schema.Decoder
 	serializer  *rdf.Serializer
+}
+
+func newDecoder(r *http.Request) *schema.Decoder {
+	decoder := schema.NewDecoder()
+	decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
+		loc := getTimeLocation(r)
+		t, err := time.ParseInLocation("2006-01-02T15:04", s, loc)
+		if err != nil {
+			return reflect.ValueOf(time.Now())
+		}
+		return reflect.ValueOf(t)
+	})
+	decoder.RegisterConverter(time.Duration(0), func(s string) reflect.Value {
+		d, err := time.ParseDuration(s)
+		if err != nil {
+			return reflect.ValueOf(time.Duration(0))
+		}
+		return reflect.ValueOf(d)
+	})
+	return decoder
 }
 
 func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer) (*Server, error) {
@@ -48,21 +67,6 @@ func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, a
 		mainUser:    adminUser,
 		serializer:  serializer,
 	}
-	s.decoder = schema.NewDecoder()
-	s.decoder.RegisterConverter(time.Time{}, func(s string) reflect.Value {
-		t, err := time.ParseInLocation("2006-01-02T15:04", s, time.Local)
-		if err != nil {
-			return reflect.ValueOf(time.Now())
-		}
-		return reflect.ValueOf(t)
-	})
-	s.decoder.RegisterConverter(time.Duration(0), func(s string) reflect.Value {
-		d, err := time.ParseDuration(s)
-		if err != nil {
-			return reflect.ValueOf(time.Duration(0))
-		}
-		return reflect.ValueOf(d)
-	})
 	err := s.setup()
 	return s, err
 }
@@ -74,6 +78,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) setup() error {
 	s.mux.HandleFunc("GET /login", s.login)
 	s.mux.HandleFunc("GET /login/callback", s.loginCallback)
+	s.mux.Handle("GET /login/settings", composeFunc(s.loginSettings, s.mainLogin))
+	s.mux.Handle("POST /login/settings", composeFunc(s.loginSettings, s.mainLogin))
 
 	s.mux.Handle("GET /rdf/all", composeFunc(s.getRDF, s.mainLogin))
 
@@ -194,8 +200,9 @@ func (s *Server) activityEditPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	decoder := newDecoder(r)
 	var parsed storage.Activity
-	err = s.decoder.Decode(&parsed, r.PostForm)
+	err = decoder.Decode(&parsed, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -318,8 +325,9 @@ func (s *Server) taskEditPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	decoder := newDecoder(r)
 	var parsed storage.Task
-	err = s.decoder.Decode(&parsed, r.PostForm)
+	err = decoder.Decode(&parsed, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -347,8 +355,9 @@ func (s *Server) taskNewPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	decoder := newDecoder(r)
 	var parsed storage.Task
-	err = s.decoder.Decode(&parsed, r.PostForm)
+	err = decoder.Decode(&parsed, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -363,23 +372,25 @@ func (s *Server) taskNewPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) taskNewActivityNew(w http.ResponseWriter, r *http.Request) {
+	loc := getTimeLocation(r)
 	preset := map[string]string{}
 	for k, v := range r.URL.Query() {
 		if len(v) > 0 {
 			preset[k] = v[0]
 		}
 	}
+	now := time.Now().In(loc)
 	if _, ok := preset["Deadline"]; !ok {
-		preset["Deadline"] = time.Now().Format("2006-01-02T15:04")
+		preset["Deadline"] = now.Format("2006-01-02T15:04")
 	}
 	if _, ok := preset["Due"]; !ok {
-		preset["Due"] = time.Now().Format("2006-01-02T15:04")
+		preset["Due"] = now.Format("2006-01-02T15:04")
 	}
 	if _, ok := preset["TimeStart"]; !ok {
-		preset["TimeStart"] = time.Now().Format("2006-01-02T15:04")
+		preset["TimeStart"] = now.Format("2006-01-02T15:04")
 	}
 	if _, ok := preset["TimeEnd"]; !ok {
-		preset["TimeEnd"] = time.Now().Format("2006-01-02T15:04")
+		preset["TimeEnd"] = now.Format("2006-01-02T15:04")
 	}
 	s.renderTemplate("task-new-activity-new.html", w, r, map[string]interface{}{"preset": preset})
 	return
@@ -397,8 +408,9 @@ func (s *Server) taskNewActivityNewPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	decoder := newDecoder(r)
 	var parsed taskNewActivityNewQ
-	err = s.decoder.Decode(&parsed, r.PostForm)
+	err = decoder.Decode(&parsed, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -473,7 +485,8 @@ func (s *Server) taskActivityNewPost(w http.ResponseWriter, r *http.Request) {
 	planID := r.PostForm.Get("PlanID")
 	delete(r.PostForm, "PlanID")
 
-	err = s.decoder.Decode(&a, r.PostForm)
+	decoder := newDecoder(r)
+	err = decoder.Decode(&a, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -554,7 +567,8 @@ func (s *Server) taskPlanNewPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	err = s.decoder.Decode(&p, r.PostForm)
+	decoder := newDecoder(r)
+	err = decoder.Decode(&p, r.PostForm)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("form data decode failed: %s", err), 422)
 		return
@@ -622,7 +636,7 @@ func (s *Server) activityExtend(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "id must be int", 422)
 		return
 	}
-	timeEnd, err := parseFormTime(r.FormValue("time_end"))
+	timeEnd, err := parseFormTime(r.FormValue("time_end"), r)
 	if err != nil {
 		http.Error(w, err.Error(), 422)
 		return
@@ -655,12 +669,12 @@ func (s *Server) activityResume(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	location := r.FormValue("location")
-	timeEnd, err := parseFormTime(r.FormValue("time_end"))
+	timeEnd, err := parseFormTime(r.FormValue("time_end"), r)
 	if err != nil {
 		http.Error(w, err.Error(), 422)
 		return
 	}
-	timeStart, err := parseFormTime(r.FormValue("time_start"))
+	timeStart, err := parseFormTime(r.FormValue("time_start"), r)
 	if err != nil {
 		http.Error(w, err.Error(), 422)
 		return
@@ -685,7 +699,8 @@ func (s *Server) activityResume(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) dayView(w http.ResponseWriter, r *http.Request) {
-	date, err := time.ParseInLocation("2006-01-02", r.PathValue("date"), time.Local)
+	loc := getTimeLocation(r)
+	date, err := time.ParseInLocation("2006-01-02", r.PathValue("date"), loc)
 	if err != nil {
 		http.Error(w, "invalid date format", 422)
 		return

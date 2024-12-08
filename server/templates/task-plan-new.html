@@ -3,7 +3,7 @@
 New Plan for {{ .task.QuickTitle }}
 {{ end }}
 {{ define "body" }}
-{{ $now := now | formatDatetimeLocal }}
+{{ $now := now | formatDatetimeLocalHTMl tzloc }}
 <nav>
   <span>{{ template "title" . }}</span>
 </nav>
