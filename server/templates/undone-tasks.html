@@ -21,11 +21,11 @@
   </a>
   <aside>
   {{ if $task.Due }}
-  Due on {{ $task.Due | formatUser tzloc }}
+  Due on {{ $task.Due | formatUser $.tzloc }}
   {{ end }}
   <br />
   {{ if $task.Deadline }}
-  Deadline is {{ $task.Deadline | formatUser tzloc }}
+  Deadline is {{ $task.Deadline | formatUser $.tzloc }}
   {{ end }}
   </aside>
   {{ $task.Description | renderMarkdown }}

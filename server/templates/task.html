@@ -15,11 +15,11 @@
 <section id="description">
   {{ renderMarkdown .task.Description }}
   {{ if .task.Due }}
-  Due on {{ .task.Due | formatUser tzloc }}
+  Due on {{ .task.Due | formatUser $.tzloc }}
   {{ end }}
   <br />
   {{ if .task.Deadline }}
-  Deadline is {{ .task.Deadline | formatUser tzloc }}
+  Deadline is {{ .task.Deadline | formatUser $.tzloc }}
   {{ end }}
 </section>
 <section id="activities">
@@ -42,7 +42,7 @@
     {{ range $i, $plan := .plans }}
     <li>
       <a href="/plan/{{ $plan.ID }}">
-        Plan from {{ $plan.TimeAtAfter | formatUser tzloc }} to {{ $plan.TimeBefore | formatUser tzloc }}
+        Plan from {{ $plan.TimeAtAfter | formatUser $.tzloc }} to {{ $plan.TimeBefore | formatUser $.tzloc }}
         {{ if ne $plan.Location "" }}
         at {{ $plan.Location }}
         {{ end }}

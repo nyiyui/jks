@@ -3,7 +3,7 @@
 New Activity for {{ .task.QuickTitle }}
 {{ end }}
 {{ define "body" }}
-{{ $now := now | formatDatetimeLocalHTML tzloc }}
+{{ $now := now | formatDatetimeLocalHTML $.tzloc }}
 <nav>
   <span>{{ template "title" . }}</span>
 </nav>
@@ -15,9 +15,9 @@ New Activity for {{ .task.QuickTitle }}
       {{ range $i, $plan := .plans }}
       {{ if eq $plan.ActivityID 0 }}
       <option {{ if eq $i $.selectedPlan }}selected{{ end }} value="{{ $plan.ID }}">
-        {{ $plan.TimeAtAfter | formatHM tzloc }}
+        {{ $plan.TimeAtAfter | formatHM $.tzloc }}
         to
-        {{ $plan.TimeBefore | formatHM tzloc }}
+        {{ $plan.TimeBefore | formatHM $.tzloc }}
         {{ if ne "" $plan.Location }}
         at
         {{ $plan.Location }}

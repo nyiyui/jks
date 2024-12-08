@@ -28,14 +28,14 @@ Latest
       </a>
     </td>
     <td>
-      {{ $a.TimeStart | formatDayLong tzloc }}
-      {{ $a.TimeStart | formatHM tzloc }}
+      {{ $a.TimeStart | formatDayLong $.tzloc }}
+      {{ $a.TimeStart | formatHM $.tzloc }}
     </td>
     <td>
-      {{ if ne ($a.TimeStart | formatDay tzloc) ($a.TimeEnd | formatDay tzloc) }}
-      {{ $a.TimeEnd | formatDayLong tzloc }}
+      {{ if ne ($a.TimeStart | formatDay $.tzloc) ($a.TimeEnd | formatDay $.tzloc) }}
+      {{ $a.TimeEnd | formatDayLong $.tzloc }}
       {{ end }}
-      {{ $a.TimeEnd | formatHM tzloc }}
+      {{ $a.TimeEnd | formatHM $.tzloc }}
     </td>
     <td>
       {{ $a.Location }}
@@ -46,7 +46,7 @@ Latest
       <form action="/activity/{{ $a.ID }}/extend" method="post">
         <label>
           New End
-          <input type="time" name="time_end" value="{{ now | formatHM tzloc }}" />
+          <input type="time" name="time_end" value="{{ now | formatHM $.tzloc }}" />
         </label>
         <input type="submit" value="Extend" />
       </form>
@@ -58,11 +58,11 @@ Latest
         </label>
         <label>
           Start
-          <input type="time" name="time_start" value="{{ now | formatHM tzloc }}" />
+          <input type="time" name="time_start" value="{{ now | formatHM $.tzloc }}" />
         </label>
         <label>
           End
-          <input type="time" name="time_end" value="{{ now | formatHM tzloc }}" />
+          <input type="time" name="time_end" value="{{ now | formatHM $.tzloc }}" />
         </label>
         <input type="submit" value="Duplicate" />
       </form>

@@ -4,7 +4,7 @@
 <nav>
   <span>{{ template "title" . }}</span>
 </nav>
-{{ $now := now | formatDatetimeLocalHTML tzloc }}
+{{ $now := now | formatDatetimeLocalHTML $.tzloc }}
 <form action="/task/new/activity/new" method="post">
   <fieldset>
     <legend>Task</legend>

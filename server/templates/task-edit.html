@@ -20,11 +20,11 @@ Edit {{ .task.QuickTitle }}
   </label>
   <label>
     Deadline
-    <input type="datetime-local" name="Deadline" value="{{ .task.Deadline | formatDatetimeLocalHTML tzloc }}" />
+    <input type="datetime-local" name="Deadline" value="{{ .task.Deadline | formatDatetimeLocalHTML $.tzloc }}" />
   </label>
   <label>
     Due
-    <input type="datetime-local" name="Due" value="{{ .task.Due | formatDatetimeLocalHTML tzloc }}" />
+    <input type="datetime-local" name="Due" value="{{ .task.Due | formatDatetimeLocalHTML $.tzloc }}" />
   </label>
   <input type="submit" value="Edit" />
 </form>
