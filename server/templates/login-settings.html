@@ -5,8 +5,8 @@ Session Settings
 {{ define "body" }}
 Logged in as:
 <a href="{{ .login.HTMLURL }}">
-<img src="{{ .login.AvatarURL }}" alt="avatar" />
-{{ .login.Login }}
+  <img src="{{ .login.AvatarURL }}" alt="avatar" style="width: 20px; height: 20px; vertical-align: text-bottom;" />
+  {{ .login.Login }}
 </a>
 <form action="/login/settings" method="post">
   <label>
