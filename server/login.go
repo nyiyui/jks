@@ -21,7 +21,7 @@ var LoginUserDataKey key
 
 // TimeLocationKey is the key for the *time.Location in the request context.
 // When using mainLogin, this key will be set to the *time.Location set by the user.
-var TimeLocationKey key
+var TimeLocationKey = "timeLocation"
 
 func getTimeLocation(r *http.Request) *time.Location {
 	loc, ok := r.Context().Value(TimeLocationKey).(*time.Location)
@@ -61,8 +61,6 @@ func (s *Server) mainLogin(next http.Handler) http.Handler {
 				return
 			}
 			r = r.WithContext(context.WithValue(r.Context(), TimeLocationKey, loc))
-		} else {
-			r = r.WithContext(context.WithValue(r.Context(), TimeLocationKey, time.UTC))
 		}
 		r = r.WithContext(context.WithValue(r.Context(), LoginUserDataKey, data))
 		next.ServeHTTP(w, r)
