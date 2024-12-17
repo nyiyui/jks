@@ -32,7 +32,7 @@ Edit {{ $title }}
     <input type="datetime-local" name="TimeEnd" value="{{ .activity.TimeEnd | formatDatetimeLocalHTML $.tzloc }}" />
   </label>
   <label>
-    <input type="checkbox" name="Done" />
+    <input type="checkbox" name="Done" {{ if .activity.Done }}checked{{ end }} />
     Task is done with this activity
   </label>
   <label>
