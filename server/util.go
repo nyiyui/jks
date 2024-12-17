@@ -13,6 +13,6 @@ func parseFormTime(s string, r *http.Request) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, errors.New("time must be in form 15:04")
 	}
-	now := time.Now()
-	return time.Date(now.Year(), now.Month(), now.Day(), timeRaw.Hour(), timeRaw.Minute(), 0, 0, time.Local), nil
+	now := time.Now().In(loc)
+	return time.Date(now.Year(), now.Month(), now.Day(), timeRaw.Hour(), timeRaw.Minute(), 0, 0, loc), nil
 }
