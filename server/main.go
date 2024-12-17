@@ -455,10 +455,23 @@ func (s *Server) taskActivityNew(w http.ResponseWriter, r *http.Request) {
 			selectedPlan = i
 		}
 	}
+	latestActivity, _ := func() (a storage.Activity, ok bool) {
+		as, err := s.st.ActivityLatestN(r.Context(), 1)
+		if err != nil {
+			log.Printf("storage: %s", err)
+			return storage.Activity{}, false
+		}
+		if len(as) == 0 {
+			return storage.Activity{}, false
+		}
+		return as[0], true
+	}()
+
 	s.renderTemplate("task-activity-new.html", w, r, map[string]interface{}{
-		"task":         t,
-		"plans":        plans,
-		"selectedPlan": selectedPlan,
+		"task":           t,
+		"plans":          plans,
+		"selectedPlan":   selectedPlan,
+		"latestActivity": latestActivity,
 	})
 	return
 }
