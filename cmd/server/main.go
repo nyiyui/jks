@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -34,7 +35,7 @@ func main() {
 	}
 	log.Printf("migrating database...")
 	err = database.Migrate(db.DB)
-	if err != nil {
+	if err != nil && err != migrate.ErrNoChange {
 		panic(err)
 	}
 	log.Printf("database ready.")
