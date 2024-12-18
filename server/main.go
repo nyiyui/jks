@@ -759,7 +759,8 @@ func (s *Server) dayView(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) makeDayViewDelta(days int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		date := time.Now().AddDate(0, 0, days).Format("2006-01-02")
+		loc := getTimeLocation(r)
+		date := time.Now().In(loc).AddDate(0, 0, days).Format("2006-01-02")
 		http.Redirect(w, r, fmt.Sprintf("/day/%s", date), 302)
 	}
 }
