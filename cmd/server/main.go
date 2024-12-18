@@ -33,7 +33,7 @@ func main() {
 		panic(err)
 	}
 	log.Printf("migrating database...")
-	database.Migrate(db.DB)
+	err = database.Migrate(db.DB)
 	if err != nil {
 		panic(err)
 	}
