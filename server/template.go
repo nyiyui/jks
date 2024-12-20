@@ -23,6 +23,9 @@ import (
 )
 
 var buildInfo debug.BuildInfo
+var vcsRevision string
+var vcsTime string
+var vcsModified bool
 
 //go:embed layouts
 var layoutsFS embed.FS
@@ -36,6 +39,17 @@ func init() {
 	buildInfo2, _ := debug.ReadBuildInfo()
 	if buildInfo2 != nil {
 		buildInfo = *buildInfo2
+	}
+
+	for _, s := range buildInfo2.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			vcsRevision = s.Value
+		case "vcs.time":
+			vcsTime = s.Value
+		case "vcs.modified":
+			vcsModified = s.Value == "true"
+		}
 	}
 }
 
@@ -149,6 +163,13 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 			},
 			"buildInfo": func() debug.BuildInfo {
 				return buildInfo
+			},
+			"vcsInfo": func() map[string]interface{} {
+				return map[string]interface{}{
+					"revision": vcsRevision,
+					"time":     vcsTime,
+					"modified": vcsModified,
+				}
 			},
 		})
 	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "layouts/*.html")
