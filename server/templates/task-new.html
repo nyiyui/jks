@@ -3,29 +3,6 @@
 {{ define "body" }}
 {{ $now := now | formatDatetimeLocalHTML $.tzloc }}
 <style>
-.form-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    
-    width: 100%;
-}
-
-form {
-    width: 33vw;
-    height: auto;
-    max-width: 100%;
-
-    margin: 10px;
-}
-
-form label {
-    margin-top: 1em;
-}
-
-form label,form input {
-    display: block;
-}
 
 </style>
 
@@ -53,8 +30,8 @@ form label,form input {
       </label>
       <textarea id="Description" name="Description"></textarea>
 
-      <input type="submit" value="Add" />
   </fieldset>
+  <input type="submit" value="Add" />
 </form>
 </div>
 {{ end }}

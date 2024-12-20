@@ -7,55 +7,60 @@ New Activity for {{ .task.QuickTitle }}
 <nav>
   <span>{{ template "title" . }}</span>
 </nav>
-<form action="/task/{{ .task.ID }}/activity/new" method="post">
-  <label>
-    Corresponding Plan
-    <select name="PlanID">
-      <option value="">None</option>
-      {{ range $i, $plan := .plans }}
-      {{ if eq $plan.ActivityID 0 }}
-      <option {{ if eq $i $.selectedPlan }}selected{{ end }} value="{{ $plan.ID }}">
-        {{ $plan.TimeAtAfter | formatHM $.tzloc }}
-        to
-        {{ $plan.TimeBefore | formatHM $.tzloc }}
-        {{ if ne "" $plan.Location }}
-        at
-        {{ $plan.Location }}
+
+<div class="form-container">
+  <form action="/task/{{ .task.ID }}/activity/new" method="post">
+    <fieldset>
+      <legend>New Activity</legend>
+      <label for="PlanID">
+        Corresponding Plan
+      </label>
+      <select id="PlanID" name="PlanID">
+        <option value="">None</option>
+        {{ range $i, $plan := .plans }}
+        {{ if eq $plan.ActivityID 0 }}
+        <option {{ if eq $i $.selectedPlan }}selected{{ end }} value="{{ $plan.ID }}">
+          {{ $plan.TimeAtAfter | formatHM $.tzloc }}
+          to
+          {{ $plan.TimeBefore | formatHM $.tzloc }}
+          {{ if ne "" $plan.Location }}
+          at
+          {{ $plan.Location }}
+          {{ end }}
+        </option>
         {{ end }}
-      </option>
-      {{ end }}
-      {{ end }}
-    </select>
-  </label>
-  <label>
-    Location
-    <input
-      type="text"
-      name="Location"
-      {{ if .plans }}
-        {{ $plan := index .plans $.selectedPlan }}
-        {{ if ne "" $plan.Location }}value="{{ $plan.Location }}"{{ end }}
-      {{ else }}
-        value="{{ $.latestActivity.Location }}"
-      {{ end }}
-    />
-  </label>
-  <label>
-    Start
-    <input type="datetime-local" name="TimeStart" value="{{ $now }}" />
-  </label>
-  <label>
-    End
-    <input type="datetime-local" name="TimeEnd" value="{{ $now }}" />
-  </label>
-  <label>
-    <input type="checkbox" name="Done" />
-    Task is done with this activity
-  </label>
-  <label>
-    Note
-    <textarea name="Note"></textarea>
-  </label>
-  <input type="submit" value="Add" />
-</form>
+        {{ end }}
+      </select>
+
+      <label for="Location">
+        Location
+      </label>
+      <input type="text" id="Location" name="Location" {{ if .plans }} {{ $plan :=index .plans $.selectedPlan }} {{ if
+        ne "" $plan.Location }}value="{{ $plan.Location }}" {{ end }} {{ else }} value="{{ $.latestActivity.Location }}"
+        {{ end }} />
+
+      <label for="TimeStart">
+        Start
+      </label>
+      <input type="datetime-local" id="TimeStart" name="TimeStart" value="{{ $now }}" />
+
+      <label id="TimeEnd">
+        End
+      </label>
+      <input type="datetime-local" id="TimeEnd" name="TimeEnd" value="{{ $now }}" />
+
+      <label for="Done" style="display: inline-block">
+        Task is done with this activity
+      </label>
+      <input type="checkbox" id="Done" name="Done" style="display: inline-block;" />
+
+      <label for="Note">
+        Note
+      </label>
+      <textarea id="Note" name="Note"></textarea>
+    </fieldset>
+
+    <input type="submit" value="Add" />
+  </form>
+</div>
 {{ end }}
