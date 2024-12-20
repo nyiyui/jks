@@ -26,6 +26,7 @@
             src = ./.;
             vendorHash = "sha256-LFK6qrNw4NUBPcGCbgvFeH0QGSKoS054y+OcxMm+w6M=";
             subPackages = [ "cmd/server" ];
+            ldflags = [ "-X nyiyui.ca/jks/server.vcsInfo=${version}" ];
           });
       in
       {
