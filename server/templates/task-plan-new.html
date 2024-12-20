@@ -7,27 +7,37 @@ New Plan for {{ .task.QuickTitle }}
 <nav>
   <span>{{ template "title" . }}</span>
 </nav>
+<div class="form-container">
 <form action="/task/{{ .task.ID }}/plan/new" method="post">
-  <label>
+  <fieldset>
+  <legend>New Plan</legend>
+
+  <label for="Location">
     Location
-    <input type="text" name="Location" />
   </label>
-  <label>
+  <input type="text" id="Location" name="Location" />
+
+  <label for="TimeAtAfter">
     Start at or after
-    <input type="datetime-local" name="TimeAtAfter" value="{{ $now }}" />
   </label>
-  <label>
+  <input type="datetime-local" id="TimeAtAfter" name="TimeAtAfter" value="{{ $now }}" />
+
+  <label for="TimeBefore">
     End before
-    <input type="datetime-local" name="TimeBefore" value="{{ $now }}" />
   </label>
-  <label>
+  <input type="datetime-local" id="TimeBefore" name="TimeBefore" value="{{ $now }}" />
+
+  <label for="DurationGe">
     Duration greater than
-    <input type="text" name="DurationGe" />
   </label>
-  <label>
+  <input type="number" id="DurationGe" name="DurationGe" />
+
+  <label for="DurationLt">
     Duration less than
-    <input type="text" name="DurationLt" />
   </label>
+  <input type="number" id="DurationLt" name="DurationLt"/>
+  </fieldset>
   <input type="submit" value="Add" />
 </form>
+</div>
 {{ end }}

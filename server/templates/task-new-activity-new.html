@@ -5,54 +5,70 @@
   <span>{{ template "title" . }}</span>
 </nav>
 {{ $now := now | formatDatetimeLocalHTML $.tzloc }}
-<form action="/task/new/activity/new" method="post">
-  <fieldset>
-    <legend>Task</legend>
-    <label>
-      Quick Title
-      <input type="text" name="QuickTitle" value="{{ if .preset.QuickTitle }}{{ .preset.QuickTitle }}{{ end }}" />
-    </label>
-    <label>
-      Description
-      <textarea name="Description">{{ if .preset.Description }}{{ .preset.Description }}{{ end }}</textarea>
-    </label>
-    <label>
-      Deadline
-      <input type="datetime-local" name="Deadline" value="{{ .preset.Deadline }}" />
-    </label>
-    <label>
-      Due
-      <input type="datetime-local" name="Due" value="{{ .preset.Due }}" />
-    </label>
-  </fieldset>
-  <fieldset>
-    <legend>Activity</legend>
-    <label>
-      Location
+<div class="form-container">
+  <form action="/task/new/activity/new" method="post">
+    <fieldset>
+      <legend>Task</legend>
+      <label for="QuickTitle">
+        Quick Title
+      </label>
+      <input type="text" id="QuickTitle" name="QuickTitle" value="{{ if .preset.QuickTitle }}{{ .preset.QuickTitle }}{{ end }}" />
+
+      <label for="Description">
+        Description
+      </label>
+      <textarea id="Description" name="Description">{{ if .preset.Description }}{{ .preset.Description }}{{ end }}</textarea>
+
+      <label for="Deadline">
+        Deadline
+      </label>
+      <input type="datetime-local" id="Deadline" name="Deadline" value="{{ .preset.Deadline }}" />
+
+      <label for="Due">
+        Due
+      </label>
+      <input type="datetime-local" id="Due" name="Due" value="{{ .preset.Due }}" />
+    </fieldset>
+
+
+    <fieldset>
+      <legend>Activity</legend>
+      <label for="Location">
+        Location
+      </label>
       <input
         type="text"
+        id="Location"
         name="Location"
         value="{{ if .preset.Location }}{{ .preset.Location }}{{ end }}"
       />
-    </label>
-    <label>
-      Start
-      <input type="datetime-local" name="TimeStart" value="{{ .preset.TimeStart }}" />
-    </label>
-    <label>
-      End
-      <input type="datetime-local" name="TimeEnd" value="{{ .preset.TimeEnd }}" />
-    </label>
-    <label>
-      <input type="checkbox" name="Done" {{ if .preset.Done }}checked{{ end }} />
-      Task is done with this activity
-    </label>
-    <label>
-      Note
-      <textarea name="Note">{{ if .preset.Note }}{{ .preset.Note }}{{ end }}</textarea>
-    </label>
-  </fieldset>
-  <input type="submit" value="Add" />
-</form>
+
+      <label for="TimeStart">
+        Start
+      </label>
+      <input type="datetime-local" id="TimeStart" name="TimeStart" value="{{ .preset.TimeStart }}" />
+
+      <label for="TimeEnd">
+        End
+      </label>
+      <input type="datetime-local" id="TimeEnd" name="TimeEnd" value="{{ .preset.TimeEnd }}" />
+
+      <label for="Done" style="display: inline-block">
+        Activity done
+      </label>
+      <input type="checkbox" id="Done" name="Done" style="display: inline-block" style="width: unset" {{ if .preset.Done }}checked{{ end }} />
+
+      <div>
+        <label id="Note">
+          Note
+        </label>
+        <textarea id="Note" name="Note">{{ if .preset.Note }}{{ .preset.Note }}{{ end }}</textarea>
+      </div>
+
+    </fieldset>
+
+    <input type="submit" value="Add" />
+  </form>
+</div>
 {{ end }}
 
