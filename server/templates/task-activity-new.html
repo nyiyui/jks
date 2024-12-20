@@ -33,10 +33,10 @@ New Activity for {{ .task.QuickTitle }}
       type="text"
       name="Location"
       {{ if .plans }}
-      {{ $plan := index .plans $.selectedPlan }}
-      {{ if ne "" $plan.Location }}value="{{ $plan.Location }}"{{ end }}
+        {{ $plan := index .plans $.selectedPlan }}
+        {{ if ne "" $plan.Location }}value="{{ $plan.Location }}"{{ end }}
       {{ else }}
-      {{ $.latestActivity.Location }}
+        value="{{ $.latestActivity.Location }}"
       {{ end }}
     />
   </label>
