@@ -63,7 +63,7 @@
       {{ template "body" $ }}
     </main>
     <footer>
-      Revision {{ vcsInfo.revision }} ({{ vcsInfo.time | formatUser $.tzloc }})
+      Revision {{ vcsInfo.revision }} ({{ vcsInfo.time }})
       {{ if vcsInfo.modified }}(dirty){{ end }}
       Built using {{ buildInfo.GoVersion }}
     </footer>
