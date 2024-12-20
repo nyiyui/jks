@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       main {
-        width: 900px;
+        /* width: 900px; */
         margin: auto;
       }
       form {
@@ -37,6 +37,13 @@
       }
       nav .right {
         margin-left: auto;
+      }
+
+      @media (max-width: 800px) {
+          nav {
+            flex-wrap: wrap;
+            position: static;
+          }
       }
     </style>
     <title>
