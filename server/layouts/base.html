@@ -2,148 +2,148 @@
 <html>
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-        form {
-            display: table;
-            width: 100%;
-        }
+    form {
+      display: table;
+      width: 100%;
+    }
 
-        html,
-        body {
-            min-height: 100vh;
-        }
+    html,
+    body {
+      min-height: 100vh;
+    }
 
-        body {
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-        }
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
 
-        /* main { */
-        /*   min-height: 100%; */
-        /* } */
+    /* main { */
+    /*   min-height: 100%; */
+    /* } */
 
-        nav {
-            position: sticky;
-            top: 0;
-            color: #86cecb;
-            background-color: #373b3e;
-            padding: 8px;
-            display: flex;
-            gap: 12px;
-            z-index: 10;
-            /* make nav above events, etc */
-        }
+    nav {
+      position: sticky;
+      top: 0;
+      color: #86cecb;
+      background-color: #373b3e;
+      padding: 8px;
+      display: flex;
+      gap: 12px;
+      z-index: 10;
+      /* make nav above events, etc */
+    }
 
-        nav a {
-            color: #86cecb;
-            text-decoration: none;
-        }
+    nav a {
+      color: #86cecb;
+      text-decoration: none;
+    }
 
-        nav .right {
-            margin-left: auto;
-        }
+    nav .right {
+      margin-left: auto;
+    }
 
-        .form-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+    .form-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
 
-            width: 100%;
-        }
+      width: 100%;
+    }
 
-        form {
-            width: 33vw;
-            height: auto;
-            max-width: 100%;
+    form {
+      width: 33vw;
+      height: auto;
+      max-width: 100%;
 
-            margin: 10px;
-        }
+      margin: 10px;
+    }
 
-        fieldset {
-            margin-bottom: 10px;
-        }
+    fieldset {
+      margin-bottom: 10px;
+    }
 
-        form label {
-            margin-top: 1em;
-        }
+    form label {
+      margin-top: 1em;
+    }
 
-        form label,
-        form input {
-            display: block;
-        }
+    form label,
+    form input {
+      display: block;
+    }
 
-        form input[type="submit"] {
-            margin-left: 0px;
-            margin-right: 0px;
-            width: 100%;
+    form input[type="submit"] {
+      margin-left: 0px;
+      margin-right: 0px;
+      width: 100%;
 
-            float: right;
-        }
+      float: right;
+    }
 
-        form input[type="checkbox"] {
-            vertical-align: middle;
-        }
+    form input[type="checkbox"] {
+      vertical-align: middle;
+    }
 
-        form input:not([type="checkbox"]) {
-            min-width: 50%;
-        }
+    form input:not([type="checkbox"]) {
+      min-width: 50%;
+    }
 
-        form textarea {
-            width: 100%;
-            height: 10em;
-        }
+    form textarea {
+      width: 100%;
+      height: 10em;
+    }
 
-        @media (max-width: 800px) {
-            nav {
-                flex-wrap: wrap;
-                position: static;
-            }
+    @media (max-width: 800px) {
+      nav {
+        flex-wrap: wrap;
+        position: static;
+      }
 
-            form input {
-                margin-left: 0px;
-                margin-right: 0px;
-            }
+      form input {
+        margin-left: 0px;
+        margin-right: 0px;
+      }
 
-            form input:not([type="checkbox"]) {
-                width: 100%;
-            }
-        }
-    </style>
-    <title>
-        {{ block "title" $ }}{{ end }}
-    </title>
-    {{ block "head-extra" $ }}{{ end }}
+      form input:not([type="checkbox"]) {
+        width: 100%;
+      }
+    }
+  </style>
+  <title>
+    {{ block "title" $ }}{{ end }}
+  </title>
+  {{ block "head-extra" $ }}{{ end }}
 </head>
 
 <body>
-    <nav id="nav-main">
-        <a href="/activity/latest">Latest</a>
-        <a href="/day/today">Today</a>
-        <a href="/day/tomorrow">Tomorrow</a>
-        <a href="/undone-tasks">Undone</a>
-        <a href="/task/new">New Task</a>
-        <a href="/task/new/activity/new">New Task with Activity</a>
-        {{ if .login }}
-        <span class="right">
-            {{ .login.Login }}
-            (<a href="/login/settings">Settings</a>)
-        </span>
-        {{ end }}
-    </nav>
-    <main>
-        {{ template "body" $ }}
-    </main>
+  <nav id="nav-main">
+    <a href="/activity/latest">Latest</a>
+    <a href="/day/today">Today</a>
+    <a href="/day/tomorrow">Tomorrow</a>
+    <a href="/undone-tasks">Undone</a>
+    <a href="/task/new">New Task</a>
+    <a href="/task/new/activity/new">New Task with Activity</a>
+    {{ if .login }}
+    <span class="right">
+      {{ .login.Login }}
+      (<a href="/login/settings">Settings</a>)
+    </span>
+    {{ end }}
+  </nav>
+  <main>
+    {{ template "body" $ }}
+  </main>
 </body>
 <div style="flex-grow: 1"></div>
 <footer>
-    {{ vcsInfo }}
-    Built using {{ buildInfo.GoVersion }}
+  {{ vcsInfo }}
+  Built using {{ buildInfo.GoVersion }}
 </footer>
 
 </html>
