@@ -29,7 +29,7 @@
             ldflags = [ "-X nyiyui.ca/jks/server.vcsInfo=${version}" ];
           });
       in
-      {
+      rec {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             go
@@ -40,7 +40,8 @@
             flutter
           ];
         };
-        packages.jks = build-jks pkgs;
+        packages.default = build-jks pkgs;
+        packages.jks = packages.default;
       }
     );
 }
