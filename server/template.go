@@ -152,7 +152,7 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				return buildInfo
 			},
 			"vcsInfo": func() string {
-              return vcsInfo;
+                                return vcsInfo;
 			},
 		})
 	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "layouts/*.html")
