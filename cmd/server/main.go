@@ -21,10 +21,21 @@ func main() {
 	var dbPath string
 	var bindAddress string
 	var baseURI string
+	var seekbackServerBaseURI string
+	var seekbackServerToken string
 	flag.StringVar(&dbPath, "db-path", "db.sqlite3", "path to database")
 	flag.StringVar(&bindAddress, "bind", "127.0.0.1:8080", "bind address")
 	flag.StringVar(&baseURI, "base-uri", "http://127.0.0.1/", "base URI for RDF")
+	flag.StringVar(&seekbackServerBaseURI, "seekback-server-base-uri", "", "base URI for seekback-server")
+	flag.StringVar(&seekbackServerToken, "seekback-server-token", "", "token for seekback-server")
 	flag.Parse()
+
+	if seekbackServerBaseURI == "" {
+		log.Fatalf("seekback-server-base-uri is required")
+	}
+	if seekbackServerToken == "" {
+		log.Fatalf("seekback-server-token is required")
+	}
 
 	serializer := rdf.NewSerializer(baseURI)
 
@@ -51,7 +62,7 @@ func main() {
 		Scopes:       []string{},
 		Endpoint:     github.Endpoint,
 		RedirectURL:  os.Getenv("JKS_OAUTH_REDIRECT_URI"),
-	}, store, "nyiyui", serializer)
+	}, store, "nyiyui", serializer, seekbackServerBaseURI, seekbackServerToken)
 	if err != nil {
 		panic(err)
 	}

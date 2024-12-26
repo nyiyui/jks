@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"nyiyui.ca/jks/layout"
 	"nyiyui.ca/jks/rdf"
 	"nyiyui.ca/jks/storage"
+	"nyiyui.ca/seekback-server/tokens"
 )
 
 func composeFunc(handler http.HandlerFunc, middleware ...func(http.Handler) http.Handler) http.Handler {
@@ -29,13 +31,15 @@ func composeFunc(handler http.HandlerFunc, middleware ...func(http.Handler) http
 }
 
 type Server struct {
-	mux         *http.ServeMux
-	st          storage.Storage
-	tps         map[string]*template.Template
-	oauthConfig *oauth2.Config
-	store       sessions.Store
-	mainUser    string
-	serializer  *rdf.Serializer
+	mux                   *http.ServeMux
+	st                    storage.Storage
+	tps                   map[string]*template.Template
+	oauthConfig           *oauth2.Config
+	store                 sessions.Store
+	mainUser              string
+	serializer            *rdf.Serializer
+	seekbackServerBaseURI *url.URL
+	seekbackServerToken   tokens.Token
 }
 
 func newDecoder(r *http.Request) *schema.Decoder {
@@ -58,16 +62,26 @@ func newDecoder(r *http.Request) *schema.Decoder {
 	return decoder
 }
 
-func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer) (*Server, error) {
-	s := &Server{
-		mux:         http.NewServeMux(),
-		st:          st,
-		oauthConfig: oauthConfig,
-		store:       store,
-		mainUser:    adminUser,
-		serializer:  serializer,
+func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer, seekbackServerBaseURI, seekbackServerToken string) (*Server, error) {
+	seekbackServerBaseURI2, err := url.Parse(seekbackServerBaseURI)
+	if err != nil {
+		return nil, err
 	}
-	err := s.setup()
+	seekbackServerToken2, err := tokens.ParseToken(seekbackServerToken)
+	if err != nil {
+		return nil, err
+	}
+	s := &Server{
+		mux:                   http.NewServeMux(),
+		st:                    st,
+		oauthConfig:           oauthConfig,
+		store:                 store,
+		mainUser:              adminUser,
+		serializer:            serializer,
+		seekbackServerBaseURI: seekbackServerBaseURI2,
+		seekbackServerToken:   seekbackServerToken2,
+	}
+	err = s.setup()
 	return s, err
 }
 
@@ -150,9 +164,19 @@ func (s *Server) activityView(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
+
+	events, err := s.getEvents(a.TimeStart, a.TimeEnd, r.Context())
+	if err != nil {
+		log.Printf("get events: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+
 	s.renderTemplate("activity.html", w, r, map[string]interface{}{
-		"activity": a,
-		"task":     t,
+		"activity":              a,
+		"task":                  t,
+		"events":                events,
+		"seekbackServerBaseURI": s.seekbackServerBaseURI,
 	})
 	return
 }
