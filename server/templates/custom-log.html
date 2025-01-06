@@ -1,0 +1,30 @@
+{{ template "base.html" $ }}
+{{ define "title" }}
+Custom Log
+{{ end }}
+{{ define "body" }}
+<table>
+  <tr>
+    <th>Start</th>
+    <th>End</th>
+    <th>Location</th>
+  </tr>
+{{ range $i, $a := .activities }}
+  <tr>
+    <td>
+      {{ $a.TimeStart | formatDayLong $.tzloc }}
+      {{ $a.TimeStart | formatHM $.tzloc }}
+    </td>
+    <td>
+      {{ if ne ($a.TimeStart | formatDay $.tzloc) ($a.TimeEnd | formatDay $.tzloc) }}
+      {{ $a.TimeEnd | formatDayLong $.tzloc }}
+      {{ end }}
+      {{ $a.TimeEnd | formatHM $.tzloc }}
+    </td>
+    <td>
+      {{ $a.Location }}
+    </td>
+  </tr>
+{{ end }}
+</table>
+{{ end }}

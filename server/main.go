@@ -16,6 +16,7 @@ import (
 
 	"github.com/google/safehtml/template"
 
+	"nyiyui.ca/jks/database"
 	"nyiyui.ca/jks/layout"
 	"nyiyui.ca/jks/rdf"
 	"nyiyui.ca/jks/storage"
@@ -92,10 +93,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) setup() error {
 	s.mux.HandleFunc("GET /login", s.login)
 	s.mux.HandleFunc("GET /login/callback", s.loginCallback)
-	s.mux.Handle("GET /login/settings", composeFunc(s.loginSettings, s.mainLogin))
-	s.mux.Handle("POST /login/settings", composeFunc(s.loginSettings, s.mainLogin))
+	s.mux.Handle("GET /login/settings", composeFunc(s.loginSettings, s.someLogin))
+	s.mux.Handle("POST /login/settings", composeFunc(s.loginSettings, s.someLogin))
 
 	s.mux.Handle("GET /rdf/all", composeFunc(s.getRDF, s.mainLogin))
+
+	s.mux.Handle("GET /custom-log", s.requireUser("nyiyui", http.HandlerFunc(s.getCustomLog)))
 
 	s.mux.Handle("GET /undone-tasks", composeFunc(s.undoneTasks, s.mainLogin))
 	s.mux.Handle("GET /activity/{id}", composeFunc(s.activityView, s.mainLogin))
@@ -864,6 +867,27 @@ func (s *Server) getRDF(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("rdf serialization: %s", err)
 		http.Error(w, "rdf serialization error", 500)
+		return
+	}
+	return
+}
+
+func (s *Server) getCustomLog(w http.ResponseWriter, r *http.Request) {
+	var activities []storage.Activity
+	err := s.st.(*database.Database), DB.Select(&activities, `
+SELECT * FROM activities
+WHERE task_id IN (
+  SELECT id FROM tasks
+	WHERE description = 'お手洗い'
+)
+ORDER BY time_start DESC
+`)
+	s.renderTemplate("custom-log.html", w, r, map[string]interface{}{
+		"activities": activities,
+	})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
 		return
 	}
 	return
