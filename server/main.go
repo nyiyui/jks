@@ -874,7 +874,7 @@ func (s *Server) getRDF(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getCustomLog(w http.ResponseWriter, r *http.Request) {
 	var activities []storage.Activity
-	err := s.st.(*database.Database), DB.Select(&activities, `
+	err := s.st.(*database.Database).DB.Select(&activities, `
 SELECT * FROM activities
 WHERE task_id IN (
   SELECT id FROM tasks
