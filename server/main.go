@@ -878,7 +878,7 @@ func (s *Server) getCustomLog(w http.ResponseWriter, r *http.Request) {
 SELECT * FROM activity_log
 WHERE task_id IN (
   SELECT id FROM tasks
-	WHERE description = 'お手洗い'
+	WHERE quick_title = 'お手洗い'
 )
 ORDER BY time_start DESC
 `)
