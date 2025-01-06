@@ -23,11 +23,13 @@ func main() {
 	var baseURI string
 	var seekbackServerBaseURI string
 	var seekbackServerToken string
+	var customLogUser string
 	flag.StringVar(&dbPath, "db-path", "db.sqlite3", "path to database")
 	flag.StringVar(&bindAddress, "bind", "127.0.0.1:8080", "bind address")
 	flag.StringVar(&baseURI, "base-uri", "http://127.0.0.1/", "base URI for RDF")
 	flag.StringVar(&seekbackServerBaseURI, "seekback-server-base-uri", "", "base URI for seekback-server")
 	flag.StringVar(&seekbackServerToken, "seekback-server-token", "", "token for seekback-server")
+	flag.StringVar(&customLogUser, "custom-log-user", "", "custom log user")
 	flag.Parse()
 
 	if seekbackServerBaseURI == "" {
@@ -62,7 +64,7 @@ func main() {
 		Scopes:       []string{},
 		Endpoint:     github.Endpoint,
 		RedirectURL:  os.Getenv("JKS_OAUTH_REDIRECT_URI"),
-	}, store, "nyiyui", serializer, seekbackServerBaseURI, seekbackServerToken)
+	}, store, "nyiyui", serializer, seekbackServerBaseURI, seekbackServerToken, customLogUser)
 	if err != nil {
 		panic(err)
 	}

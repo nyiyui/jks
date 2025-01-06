@@ -41,6 +41,7 @@ type Server struct {
 	serializer            *rdf.Serializer
 	seekbackServerBaseURI *url.URL
 	seekbackServerToken   tokens.Token
+	customLogUser         string
 }
 
 func newDecoder(r *http.Request) *schema.Decoder {
@@ -63,7 +64,7 @@ func newDecoder(r *http.Request) *schema.Decoder {
 	return decoder
 }
 
-func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer, seekbackServerBaseURI, seekbackServerToken string) (*Server, error) {
+func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer, seekbackServerBaseURI, seekbackServerToken, customLogUser string) (*Server, error) {
 	seekbackServerBaseURI2, err := url.Parse(seekbackServerBaseURI)
 	if err != nil {
 		return nil, err
@@ -81,6 +82,7 @@ func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, a
 		serializer:            serializer,
 		seekbackServerBaseURI: seekbackServerBaseURI2,
 		seekbackServerToken:   seekbackServerToken2,
+		customLogUser:         customLogUser,
 	}
 	err = s.setup()
 	return s, err
@@ -98,7 +100,7 @@ func (s *Server) setup() error {
 
 	s.mux.Handle("GET /rdf/all", composeFunc(s.getRDF, s.mainLogin))
 
-	s.mux.Handle("GET /custom-log", s.requireUser("nyiyui", http.HandlerFunc(s.getCustomLog)))
+	s.mux.Handle("GET /custom-log", s.requireUser(s.customLogUser, http.HandlerFunc(s.getCustomLog)))
 
 	s.mux.Handle("GET /undone-tasks", composeFunc(s.undoneTasks, s.mainLogin))
 	s.mux.Handle("GET /activity/{id}", composeFunc(s.activityView, s.mainLogin))
