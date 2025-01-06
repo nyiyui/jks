@@ -20,6 +20,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"nyiyui.ca/jks/layout"
 	"nyiyui.ca/jks/storage"
+	seekbackStorage "nyiyui.ca/seekback-server/storage"
 )
 
 var buildInfo debug.BuildInfo
@@ -153,6 +154,13 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 			},
 			"vcsInfo": func() string {
                                 return vcsInfo
+			},
+			"isSamplePreview": func(v Event) bool {
+				_, ok := v.(seekbackStorage.SamplePreview)
+				return ok
+			},
+			"asSamplePreview": func(v Event) seekbackStorage.SamplePreview {
+				return v.(seekbackStorage.SamplePreview)
 			},
 		})
 	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "layouts/*.html")

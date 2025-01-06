@@ -11,25 +11,24 @@
       flake-utils,
       ...
     }@attrs:
-    let
-      pkgs = import nixpkgs { config.allowUnfree = true; };
-    in
     flake-utils.lib.eachSystem flake-utils.lib.defaultSystems (
       system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+        };
         build-jks =
           pkgs:
           (pkgs.buildGoModule rec {
             pname = "jks";
             version = if (self ? rev) then self.rev else "dirty";
             src = ./.;
-            vendorHash = "sha256-LFK6qrNw4NUBPcGCbgvFeH0QGSKoS054y+OcxMm+w6M=";
+            vendorHash = "sha256-moaoaxOjcF7bV52jL/TXwoDDK3ZwIScekr4lyFrxIZo=";
             subPackages = [ "cmd/server" ];
             ldflags = [ "-X nyiyui.ca/jks/server.vcsInfo=${version}" ];
           });
       in
-      {
+      rec {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             go
@@ -40,7 +39,8 @@
             flutter
           ];
         };
-        packages.jks = build-jks pkgs;
+        packages.default = build-jks pkgs;
+        packages.jks = packages.default;
       }
     );
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"time"
@@ -15,9 +16,11 @@ import (
 
 	"github.com/google/safehtml/template"
 
+	"nyiyui.ca/jks/database"
 	"nyiyui.ca/jks/layout"
 	"nyiyui.ca/jks/rdf"
 	"nyiyui.ca/jks/storage"
+	"nyiyui.ca/seekback-server/tokens"
 )
 
 func composeFunc(handler http.HandlerFunc, middleware ...func(http.Handler) http.Handler) http.Handler {
@@ -29,13 +32,16 @@ func composeFunc(handler http.HandlerFunc, middleware ...func(http.Handler) http
 }
 
 type Server struct {
-	mux         *http.ServeMux
-	st          storage.Storage
-	tps         map[string]*template.Template
-	oauthConfig *oauth2.Config
-	store       sessions.Store
-	mainUser    string
-	serializer  *rdf.Serializer
+	mux                   *http.ServeMux
+	st                    storage.Storage
+	tps                   map[string]*template.Template
+	oauthConfig           *oauth2.Config
+	store                 sessions.Store
+	mainUser              string
+	serializer            *rdf.Serializer
+	seekbackServerBaseURI *url.URL
+	seekbackServerToken   tokens.Token
+	customLogUser         string
 }
 
 func newDecoder(r *http.Request) *schema.Decoder {
@@ -58,16 +64,27 @@ func newDecoder(r *http.Request) *schema.Decoder {
 	return decoder
 }
 
-func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer) (*Server, error) {
-	s := &Server{
-		mux:         http.NewServeMux(),
-		st:          st,
-		oauthConfig: oauthConfig,
-		store:       store,
-		mainUser:    adminUser,
-		serializer:  serializer,
+func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer, seekbackServerBaseURI, seekbackServerToken, customLogUser string) (*Server, error) {
+	seekbackServerBaseURI2, err := url.Parse(seekbackServerBaseURI)
+	if err != nil {
+		return nil, err
 	}
-	err := s.setup()
+	seekbackServerToken2, err := tokens.ParseToken(seekbackServerToken)
+	if err != nil {
+		return nil, err
+	}
+	s := &Server{
+		mux:                   http.NewServeMux(),
+		st:                    st,
+		oauthConfig:           oauthConfig,
+		store:                 store,
+		mainUser:              adminUser,
+		serializer:            serializer,
+		seekbackServerBaseURI: seekbackServerBaseURI2,
+		seekbackServerToken:   seekbackServerToken2,
+		customLogUser:         customLogUser,
+	}
+	err = s.setup()
 	return s, err
 }
 
@@ -78,10 +95,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) setup() error {
 	s.mux.HandleFunc("GET /login", s.login)
 	s.mux.HandleFunc("GET /login/callback", s.loginCallback)
-	s.mux.Handle("GET /login/settings", composeFunc(s.loginSettings, s.mainLogin))
-	s.mux.Handle("POST /login/settings", composeFunc(s.loginSettings, s.mainLogin))
+	s.mux.Handle("GET /login/settings", composeFunc(s.loginSettings, s.someLogin))
+	s.mux.Handle("POST /login/settings", composeFunc(s.loginSettings, s.someLogin))
 
 	s.mux.Handle("GET /rdf/all", composeFunc(s.getRDF, s.mainLogin))
+
+	s.mux.Handle("GET /custom-log", s.requireUser(s.customLogUser, http.HandlerFunc(s.getCustomLog)))
 
 	s.mux.Handle("GET /undone-tasks", composeFunc(s.undoneTasks, s.mainLogin))
 	s.mux.Handle("GET /activity/{id}", composeFunc(s.activityView, s.mainLogin))
@@ -150,9 +169,19 @@ func (s *Server) activityView(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
+
+	events, err := s.getEvents(a.TimeStart, a.TimeEnd, r.Context())
+	if err != nil {
+		log.Printf("get events: %s", err)
+		http.Error(w, "storage error", 500)
+		return
+	}
+
 	s.renderTemplate("activity.html", w, r, map[string]interface{}{
-		"activity": a,
-		"task":     t,
+		"activity":              a,
+		"task":                  t,
+		"events":                events,
+		"seekbackServerBaseURI": s.seekbackServerBaseURI,
 	})
 	return
 }
@@ -840,6 +869,27 @@ func (s *Server) getRDF(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("rdf serialization: %s", err)
 		http.Error(w, "rdf serialization error", 500)
+		return
+	}
+	return
+}
+
+func (s *Server) getCustomLog(w http.ResponseWriter, r *http.Request) {
+	var activities []database.Activity
+	err := s.st.(*database.Database).DB.Select(&activities, `
+SELECT * FROM activity_log
+WHERE task_id IN (
+  SELECT id FROM tasks
+	WHERE quick_title = 'お手洗い'
+)
+ORDER BY time_start DESC
+`)
+	s.renderTemplate("custom-log.html", w, r, map[string]interface{}{
+		"activities": activities,
+	})
+	if err != nil {
+		log.Printf("template: %s", err)
+		http.Error(w, "template error", 500)
 		return
 	}
 	return

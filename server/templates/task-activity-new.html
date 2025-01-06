@@ -35,9 +35,17 @@ New Activity for {{ .task.QuickTitle }}
       <label for="Location">
         Location
       </label>
-      <input type="text" id="Location" name="Location" {{ if .plans }} {{ $plan :=index .plans $.selectedPlan }} {{ if
-        ne "" $plan.Location }}value="{{ $plan.Location }}" {{ end }} {{ else }} value="{{ $.latestActivity.Location }}"
-        {{ end }} />
+      <input
+        type="text"
+        name="Location"
+        id="Location"
+        {{ if .plans }}
+        {{ $plan := index .plans $.selectedPlan }}
+        {{ if ne "" $plan.Location }}value="{{ $plan.Location }}"{{ end }}
+        {{ else }}
+        value="{{ $.latestActivity.Location }}"
+        {{ end }}
+      />
 
       <label for="TimeStart">
         Start

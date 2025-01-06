@@ -36,6 +36,10 @@ func init() {
 }
 
 func (s *Server) mainLogin(next http.Handler) http.Handler {
+	return s.requireUser(s.mainUser, next)
+}
+
+func (s *Server) someLogin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		loginSession, err := s.store.Get(r, "login")
 		if err != nil {
@@ -49,8 +53,36 @@ func (s *Server) mainLogin(next http.Handler) http.Handler {
 			return
 		}
 		data := loginSession.Values["githubUserData"].(githubUserData)
-		if data.Login != s.mainUser {
-			http.Error(w, "must be main user", 401)
+		if _, ok := loginSession.Values["timezone"]; ok {
+			tzName := loginSession.Values["timezone"].(string)
+			loc, err := time.LoadLocation(tzName)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("invalid timezone: %s", tzName), 500)
+				return
+			}
+			r = r.WithContext(context.WithValue(r.Context(), TimeLocationKey, loc))
+		}
+		r = r.WithContext(context.WithValue(r.Context(), LoginUserDataKey, data))
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) requireUser(user string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		loginSession, err := s.store.Get(r, "login")
+		if err != nil {
+			log.Printf("login session get: %s", err)
+			http.Error(w, "session failure", 400)
+			return
+		}
+		_, ok := loginSession.Values["githubUserData"]
+		if !ok {
+			http.Redirect(w, r, "/login", 302)
+			return
+		}
+		data := loginSession.Values["githubUserData"].(githubUserData)
+		if data.Login != user {
+			http.Error(w, "unauthorized user", 401)
 			return
 		}
 		if _, ok := loginSession.Values["timezone"]; ok {

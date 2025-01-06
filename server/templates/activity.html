@@ -39,6 +39,28 @@ Activity for {{ .task.QuickTitle }}
   </form>
   {{ end }}
 </aside>
+<section id="events">
+  <h2>Events</h2>
+  {{ printf "%d" (len .events) }} events
+  <ol>
+    {{ range .events }}
+    <li>
+      {{ if isSamplePreview . }}
+      <a href="{{ $.seekbackServerBaseURI.JoinPath (printf "/sample/%s" .ID) }}">
+        {{ $sp := asSamplePreview . }}
+        from {{ $sp.Start | formatUser $.tzloc }}
+        ({{ $sp.Duration }})
+        {{ if ne $sp.Summary "" }}
+        - {{ $sp.Summary }}
+        {{ end }}
+      </a>
+      {{ else }}
+      {{ .ID }}
+      {{ end }}
+    </li>
+    {{ end }}
+  </ol>
+</section>
 {{ $body := splitNoteBody .activity.Note }}
 {{ renderMarkdown $body }}
 <pre>
