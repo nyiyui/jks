@@ -153,7 +153,7 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				return buildInfo
 			},
 			"vcsInfo": func() string {
-				return vcsInfo
+                                return vcsInfo
 			},
 			"isSamplePreview": func(v Event) bool {
 				_, ok := v.(seekbackStorage.SamplePreview)

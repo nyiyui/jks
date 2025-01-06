@@ -2,24 +2,37 @@
 {{ define "title" }}New Task{{ end }}
 {{ define "body" }}
 {{ $now := now | formatDatetimeLocalHTML $.tzloc }}
-<form action="/task/new" method="post">
-  <label>
-    Quick Title
-    <input type="text" name="QuickTitle" />
-  </label>
-  <label>
-    Description
-    <textarea name="Description"></textarea>
-  </label>
-  <label>
-    Deadline
-    <input type="datetime-local" name="Deadline" value="{{ $now }}" />
-  </label>
-  <label>
-    Due
-    <input type="datetime-local" name="Due" value="{{ $now }}" />
-  </label>
+<style>
+
+</style>
+
+<div class="form-container">
+<form action="/task/new" method="post" style="">
+  <fieldset>
+      <legend>New Task</legend>
+      <label for="QuickTitle">
+        Quick Title
+      </label>
+      <input type="text" id="QuickTitle" name="QuickTitle" placeholder="quick title"/>
+
+      <label for="Deadline">
+        Deadline
+      </label>
+      <input type="datetime-local" id="Deadline" name="Deadline" value="{{ $now }}" />
+
+      <label for="Due">
+        Due
+      </label>
+      <input type="datetime-local" id="Due" name="Due" value="{{ $now }}" />
+      
+      <label for="Description">
+        Description
+      </label>
+      <textarea id="Description" name="Description"></textarea>
+
+  </fieldset>
   <input type="submit" value="Add" />
 </form>
+</div>
 {{ end }}
 
