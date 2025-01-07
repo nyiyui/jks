@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -17,7 +18,27 @@ import (
 	"nyiyui.ca/jks/server"
 )
 
+var envDocs = map[string]string{}
+
+func getenv(key, fallback, docs string) string {
+	envDocs[key] = docs
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func main() {
+	mainUser := getenv("JKS_MAIN_USER", "nyiyui", "main username")
+	flag.Usage = func() {
+		fmt.Printf("Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+		fmt.Printf("Environment variables:\n")
+		for key, docs := range envDocs {
+			fmt.Printf("  %s: %s\n", key, docs)
+		}
+	}
+
 	var dbPath string
 	var bindAddress string
 	var baseURI string
@@ -66,7 +87,7 @@ func main() {
 		Scopes:       []string{},
 		Endpoint:     github.Endpoint,
 		RedirectURL:  os.Getenv("JKS_OAUTH_REDIRECT_URI"),
-	}, store, "nyiyui", serializer, customLogUser)
+	}, store, mainUser, serializer, customLogUser)
 	if err != nil {
 		panic(err)
 	}
