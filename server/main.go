@@ -41,6 +41,7 @@ type Server struct {
 	serializer            *rdf.Serializer
 	seekbackServerBaseURI *url.URL
 	seekbackServerToken   tokens.Token
+	seekbackServerEnabled bool
 	customLogUser         string
 }
 
@@ -64,28 +65,32 @@ func newDecoder(r *http.Request) *schema.Decoder {
 	return decoder
 }
 
-func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer, seekbackServerBaseURI, seekbackServerToken, customLogUser string) (*Server, error) {
+func New(st storage.Storage, oauthConfig *oauth2.Config, store sessions.Store, adminUser string, serializer *rdf.Serializer, customLogUser string) (*Server, error) {
+	s := &Server{
+		mux:           http.NewServeMux(),
+		st:            st,
+		oauthConfig:   oauthConfig,
+		store:         store,
+		mainUser:      adminUser,
+		serializer:    serializer,
+		customLogUser: customLogUser,
+	}
+	return s, s.setup()
+}
+
+func (s *Server) SetupSeekbackServer(seekbackServerBaseURI, seekbackServerToken string) error {
 	seekbackServerBaseURI2, err := url.Parse(seekbackServerBaseURI)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	seekbackServerToken2, err := tokens.ParseToken(seekbackServerToken)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	s := &Server{
-		mux:                   http.NewServeMux(),
-		st:                    st,
-		oauthConfig:           oauthConfig,
-		store:                 store,
-		mainUser:              adminUser,
-		serializer:            serializer,
-		seekbackServerBaseURI: seekbackServerBaseURI2,
-		seekbackServerToken:   seekbackServerToken2,
-		customLogUser:         customLogUser,
-	}
-	err = s.setup()
-	return s, err
+	s.seekbackServerBaseURI = seekbackServerBaseURI2
+	s.seekbackServerToken = seekbackServerToken2
+	s.seekbackServerEnabled = true
+	return nil
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -170,19 +175,23 @@ func (s *Server) activityView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := s.getEvents(a.TimeStart, a.TimeEnd, r.Context())
-	if err != nil {
-		log.Printf("get events: %s", err)
-		http.Error(w, "storage error", 500)
-		return
+	data := map[string]interface{}{
+		"activity": a,
+		"task":     t,
 	}
 
-	s.renderTemplate("activity.html", w, r, map[string]interface{}{
-		"activity":              a,
-		"task":                  t,
-		"events":                events,
-		"seekbackServerBaseURI": s.seekbackServerBaseURI,
-	})
+	if s.seekbackServerEnabled {
+		events, err := s.getEvents(a.TimeStart, a.TimeEnd, r.Context())
+		if err != nil {
+			log.Printf("get events: %s", err)
+			http.Error(w, "storage error", 500)
+			return
+		}
+		data["events"] = events
+		data["seekbackServerBaseURI"] = s.seekbackServerBaseURI
+	}
+
+	s.renderTemplate("activity.html", w, r, data)
 	return
 }
 
