@@ -10,12 +10,9 @@ New Activity for {{ .task.QuickTitle }}
 
 <div class="form-container">
   <form action="/task/{{ .task.ID }}/activity/new" method="post">
-    <fieldset>
-      <legend>New Activity</legend>
-      <label for="PlanID">
-        Corresponding Plan
-      </label>
-      <select id="PlanID" name="PlanID">
+    <label>
+      Corresponding Plan
+      <select name="PlanID">
         <option value="">None</option>
         {{ range $i, $plan := .plans }}
         {{ if eq $plan.ActivityID 0 }}
@@ -31,14 +28,13 @@ New Activity for {{ .task.QuickTitle }}
         {{ end }}
         {{ end }}
       </select>
+    </label>
 
-      <label for="Location">
-        Location
-      </label>
+    <label>
+      Location
       <input
         type="text"
         name="Location"
-        id="Location"
         {{ if .plans }}
         {{ $plan := index .plans $.selectedPlan }}
         {{ if ne "" $plan.Location }}value="{{ $plan.Location }}"{{ end }}
@@ -46,27 +42,27 @@ New Activity for {{ .task.QuickTitle }}
         value="{{ $.latestActivity.Location }}"
         {{ end }}
       />
+    </label>
 
-      <label for="TimeStart">
-        Start
-      </label>
-      <input type="datetime-local" id="TimeStart" name="TimeStart" value="{{ $now }}" />
+    <label>
+      Start
+      <input type="datetime-local" name="TimeStart" value="{{ $now }}" />
+    </label>
 
-      <label id="TimeEnd">
-        End
-      </label>
-      <input type="datetime-local" id="TimeEnd" name="TimeEnd" value="{{ $now }}" />
+    <label>
+      End
+      <input type="datetime-local" name="TimeEnd" value="{{ $now }}" />
+    </label>
 
-      <label for="Done" style="display: inline-block">
-        Task is done with this activity
-      </label>
-      <input type="checkbox" id="Done" name="Done" style="display: inline-block;" />
+    <label  style="display: inline-block">
+      Task is done with this activity
+      <input type="checkbox" name="Done" style="display: inline-block;" />
+    </label>
 
-      <label for="Note">
-        Note
-      </label>
-      <textarea id="Note" name="Note"></textarea>
-    </fieldset>
+    <label>
+      Note
+      <textarea name="Note"></textarea>
+    </label>
 
     <input type="submit" value="Add" />
   </form>

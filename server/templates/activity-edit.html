@@ -16,37 +16,32 @@ Edit {{ $title }}
 </nav>
 <div class="form-container">
   <form action="/activity/{{ .activity.ID }}/edit" method="post">
-    <fieldset>
-      <legend>Edit Activity</legend>
-      <label for="Location">
-        Location
-      </label>
-      <input type="text" id="Location" name="Location" value="{{ .activity.Location }}" />
+    <label>
+      Location
+      <input type="text" name="Location" value="{{ .activity.Location }}" />
+    </label>
 
-      <label for="TimeStart">
-        Start
-      </label>
-      <input type="datetime-local" id="TimeStart" name="TimeStart"
+    <label>
+      Start
+      <input type="datetime-local" name="TimeStart"
         value="{{ .activity.TimeStart | formatDatetimeLocalHTML $.tzloc }}" />
+    </label>
 
-      <label for="TimeEnd">
-        End
-      </label>
-      <input type="datetime-local" id="TimeEnd" name="TimeEnd"
+    <label>
+      End
+      <input type="datetime-local" name="TimeEnd"
         value="{{ .activity.TimeEnd | formatDatetimeLocalHTML $.tzloc }}" />
+    </label>
 
-      <input type="checkbox" id="Done" name="Done" style="display: inline-block;" {{ if .activity.Done }}checked{{ end
-        }} />
-      <label for="Done" style="display: inline-block">
-        Task is done with this activity
-      </label>
+    <label style="display: inline-block">
+      <input type="checkbox" name="Done" style="display: inline-block;" {{ if .activity.Done }}checked{{ end }} />
+      Task is done with this activity
+    </label>
 
-      <label for="Note">
-        Note
-      </label>
-      <textarea id="Note" name="Note">{{ .activity.Note }}</textarea>
-
-    </fieldset>
+    <label>
+      Note
+      <textarea name="Note">{{ .activity.Note }}</textarea>
+    </label>
     <input type="submit" value="Edit" />
   </form>
 </div>

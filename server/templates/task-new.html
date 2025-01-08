@@ -8,29 +8,25 @@
 
 <div class="form-container">
 <form action="/task/new" method="post" style="">
-  <fieldset>
-      <legend>New Task</legend>
-      <label for="QuickTitle">
-        Quick Title
-      </label>
-      <input type="text" id="QuickTitle" name="QuickTitle"/>
+  <label>
+    Quick Title
+    <input type="text" name="QuickTitle"/>
+  </label>
 
-      <label for="Deadline">
-        Deadline
-      </label>
-      <input type="datetime-local" id="Deadline" name="Deadline" value="{{ $now }}" />
+  <label>
+    Deadline
+    <input type="datetime-local" name="Deadline" value="{{ $now }}" />
+  </label>
 
-      <label for="Due">
-        Due
-      </label>
-      <input type="datetime-local" id="Due" name="Due" value="{{ $now }}" />
-      
-      <label for="Description">
-        Description
-      </label>
-      <textarea id="Description" name="Description"></textarea>
-
-  </fieldset>
+  <label>
+    Due
+    <input type="datetime-local" name="Due" value="{{ $now }}" />
+  </label>
+  
+  <label>
+    Description
+    <textarea name="Description"></textarea>
+  </label>
   <input type="submit" value="Add" />
 </form>
 </div>

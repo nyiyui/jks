@@ -11,29 +11,26 @@ Edit {{ .task.QuickTitle }}
 </nav>
 <div class="form-container">
   <form action="/task/{{ .task.ID }}/edit" method="post">
-    <fieldset>
-      <legend>Edit Task</legend>
-      <label for="QuickTitle">
-        Quick Title
-      </label>
-      <input type="text" id="QuickTitle" name="QuickTitle" value="{{ .task.QuickTitle }}" />
+    <label>
+      Quick Title
+      <input type="text" name="QuickTitle" value="{{ .task.QuickTitle }}" />
+    </label>
 
-      <label for="Deadline">
-        Deadline
-      </label>
-      <input type="datetime-local" id="Deadline" name="Deadline"
+    <label>
+      Deadline
+      <input type="datetime-local" name="Deadline"
         value="{{ .task.Deadline | formatDatetimeLocalHTML $.tzloc }}" />
+    </label>
 
-      <label for="Due">
-        Due
-      </label>
-      <input type="datetime-local" id="Due" name="Due" value="{{ .task.Due | formatDatetimeLocalHTML $.tzloc }}" />
+    <label>
+      Due
+      <input type="datetime-local" name="Due" value="{{ .task.Due | formatDatetimeLocalHTML $.tzloc }}" />
+    </label>
 
-      <label for="Description">
-        Description
-      </label>
-      <textarea id="Description" name="Description">{{ .task.Description }}</textarea>
-    </fieldset>
+    <label>
+      Description
+      <textarea name="Description">{{ .task.Description }}</textarea>
+    </label>
 
     <input type="submit" value="Edit" />
   </form>
