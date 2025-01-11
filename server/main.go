@@ -1,6 +1,7 @@
 package server
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,6 +23,9 @@ import (
 	"nyiyui.ca/jks/storage"
 	"nyiyui.ca/seekback-server/tokens"
 )
+
+//go:embed static
+var staticFS embed.FS
 
 func composeFunc(handler http.HandlerFunc, middleware ...func(http.Handler) http.Handler) http.Handler {
 	var h http.Handler = handler
@@ -129,6 +133,7 @@ func (s *Server) setup() error {
 	s.mux.Handle("GET /day/yesterday", composeFunc(s.makeDayViewDelta(-1), s.mainLogin))
 	s.mux.Handle("GET /day/today", composeFunc(s.makeDayViewDelta(0), s.mainLogin))
 	s.mux.Handle("GET /day/tomorrow", composeFunc(s.makeDayViewDelta(1), s.mainLogin))
+	s.mux.Handle("GET /", http.FileServer(http.FS(staticFS)))
 	err := s.parseTemplates()
 	return err
 }
