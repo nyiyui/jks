@@ -229,7 +229,7 @@ func (w *window3) Get(limit, offset int) ([]storage.Task, error) {
 				`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+deadlineWhere+
 				` UNION ALL `+
 				`SELECT * FROM tasks `+unionNoLogs+` AND `+deadlineWhere+
-				`) ORDER BY id ASC LIMIT ? OFFSET ?`,
+				`) ORDER BY deadline ASC, due ASC LIMIT ? OFFSET ?`,
 			w.now.Unix(),
 			w.now.Unix(),
 			limit, offset)
@@ -239,7 +239,7 @@ func (w *window3) Get(limit, offset int) ([]storage.Task, error) {
 				`SELECT tasks.* FROM tasks `+notDoneJoinWhere+` AND `+queryWhere+` AND `+deadlineWhere+
 				` UNION ALL `+
 				`SELECT * FROM tasks `+unionNoLogs+` AND `+queryWhere+` AND `+deadlineWhere+
-				`) ORDER BY id ASC LIMIT ? OFFSET ?`,
+				`) ORDER BY deadline ASC, due ASC LIMIT ? OFFSET ?`,
 			w.query, w.query, w.now.Unix(),
 			w.query, w.query, w.now.Unix(),
 			limit, offset)
