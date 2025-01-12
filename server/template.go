@@ -108,7 +108,7 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				return items
 			},
 			"renderMarkdown": func(s string) (safehtml.HTML, error) {
-				md := goldmark.New(goldmark.WithExtensions(extension.Linkify))
+				md := goldmark.New(goldmark.WithExtensions(extension.Linkify, extension.TaskList))
 				var buf bytes.Buffer
 				err := md.Convert([]byte(s), &buf)
 				if err != nil {
@@ -153,7 +153,7 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				return buildInfo
 			},
 			"vcsInfo": func() string {
-                                return vcsInfo
+				return vcsInfo
 			},
 			"isSamplePreview": func(v Event) bool {
 				_, ok := v.(seekbackStorage.SamplePreview)
