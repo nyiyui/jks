@@ -85,6 +85,23 @@
         width: 100%;
         height: 10em;
       }
+
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+
+      td, th {
+        padding: 10px;
+      }
+
+      tr {
+        border: none;
+      }
+
+      tr:nth-child(even) {
+        background-color: #D3D3D3;
+      }
   
       @media (max-width: 800px) {
         nav {
