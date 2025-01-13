@@ -53,7 +53,7 @@
         height: auto;
         max-width: 100%;
   
-        margin: 10px;
+        /*margin: 10px;*/
       }
   
       form label {
@@ -86,17 +86,25 @@
         height: 10em;
       }
 
-      table, th, td {
-        border: 1px solid black;
+      table {
         border-collapse: collapse;
       }
 
-      td, th {
-        padding: 10px;
+      td:not(:last-child), th:not(:last-child) {
+        padding-right: 100px;
       }
 
-      tr {
-        border: none;
+      td:last-child, th:last-child {
+        padding-right: 10px
+      }
+
+      th, td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
+      table form:first-child label {
+        margin-top: 0;
       }
 
       tr:nth-child(even) {
@@ -116,6 +124,10 @@
   
         form input:not([type="checkbox"]) {
           width: 100%;
+        }
+        
+         td:not(:last-child), th:not(:last-child) {
+          padding-right: 10px;
         }
       }
 
