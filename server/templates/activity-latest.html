@@ -15,10 +15,10 @@ Latest
   <tr>
     <td>
       <a href="/activity/{{ $a.ID }}">
-        {{ if eq "" $a.Note }}
+        {{ if eq "" (splitNoteTitle $a.Note) }}
         Activity
         {{ else }}
-        {{ $a.Note }}
+        {{ splitNoteTitle $a.Note }}
         {{ end }}
       </a>
       for 

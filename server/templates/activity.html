@@ -1,6 +1,6 @@
 {{ template "base.html" $ }}
 {{ define "title" }}
-{{ if eq "" .activity.Note }}
+{{ if eq "" (splitNoteTitle $a.Note) }}
 Activity for {{ .task.QuickTitle }}
 {{ else }}
 {{ $title := splitNoteTitle .activity.Note }}
@@ -39,6 +39,7 @@ Activity for {{ .task.QuickTitle }}
   </form>
   {{ end }}
 </aside>
+{{ if .events }}
 <section id="events">
   <h2>Events</h2>
   {{ printf "%d" (len .events) }} events
@@ -61,6 +62,7 @@ Activity for {{ .task.QuickTitle }}
     {{ end }}
   </ol>
 </section>
+{{ end }}
 {{ $body := splitNoteBody .activity.Note }}
 {{ renderMarkdown $body }}
 <pre>
