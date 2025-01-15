@@ -52,8 +52,6 @@
         width: 100%;
         height: auto;
         max-width: 100%;
-  
-        margin: 10px;
       }
   
       form label {
@@ -85,6 +83,31 @@
         width: 100%;
         height: 10em;
       }
+
+      table {
+        border-collapse: collapse;
+      }
+
+      td:not(:last-child), th:not(:last-child) {
+        padding-right: 100px;
+      }
+
+      td:last-child, th:last-child {
+        padding-right: 10px
+      }
+
+      th, td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
+      table form:first-child label {
+        margin-top: 0;
+      }
+
+      tr:nth-child(even) {
+        background-color: #D3D3D3;
+      }
   
       @media (max-width: 800px) {
         nav {
@@ -99,6 +122,10 @@
   
         form input:not([type="checkbox"]) {
           width: 100%;
+        }
+        
+         td:not(:last-child), th:not(:last-child) {
+          padding-right: 10px;
         }
       }
 
