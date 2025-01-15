@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -27,9 +28,24 @@ type RRules struct {
 }
 
 type Task struct {
-	RRuleSet *RRuleSet
-	Task     storage.Task
-	DryRun   bool
+	RRuleSet              *RRuleSet
+	ExDates               []Time
+	Task                  storage.Task
+	PlanLocation          string
+	PlanTimeAtAfterOffset time.Duration
+	PlanTImeBeforeOffset  time.Duration
+	DryRun                bool
+}
+
+type Time time.Time
+
+func (t *Time) UnmarshalText(text []byte) error {
+	tt, err := time.Parse("2006-01-02 -0700", string(text))
+	if err != nil {
+		return fmt.Errorf("parse time: %s", err)
+	}
+	*t = Time(tt)
+	return nil
 }
 
 type RRuleSet rrule.Set
@@ -79,7 +95,9 @@ func main() {
 	defer cacheRaw.Close()
 	var cache Cache
 	err = json.NewDecoder(cacheRaw).Decode(&cache)
-	if err != nil {
+	if err == io.EOF {
+		cache = Cache{GenerateFrom: time.Now()}
+	} else if err != nil {
 		panic(err)
 	}
 
@@ -105,7 +123,7 @@ func main() {
 	}
 	log.Printf("database ready.")
 
-	generateTo := time.Now().Add(time.Duration(cfg.GenerateInterval) * time.Hour)
+	generateTo := time.Now().Add(time.Duration(cfg.GenerateInterval) * 24 * time.Hour)
 	for name := range cfg.Tasks {
 		err := createForTask(name, &database.Database{db}, cfg, cache, cache.GenerateFrom, generateTo)
 		if err != nil {
@@ -134,16 +152,19 @@ func createForTask(name string, st storage.Storage, cfg RRules, cache Cache, gen
 		generateFrom, generateTo)
 	taskCfg := cfg.Tasks[name]
 	set := (*rrule.Set)(taskCfg.RRuleSet)
+	for _, exDate := range taskCfg.ExDates {
+		set.ExDate(time.Time(exDate))
+	}
 	times := set.Between(generateFrom, generateTo, true)
 	for i, t := range times {
-		if taskCfg.DryRun {
-			log.Printf("[%s.%d] dry run for task at %s.", name, i, t)
-			continue
-		}
-		log.Printf("[%s.%d] generated task at %s.", name, i, t)
 		task := taskCfg.Task
 		task.Due = &t
 		task.Deadline = &t
+		if taskCfg.DryRun {
+			log.Printf("[%s.%d] dry run for task at %s", name, i, t.Local())
+			continue
+		}
+		log.Printf("[%s.%d] generated task at %s.", name, i, t)
 		_, err := st.TaskAdd(task, context.Background())
 		if err != nil {
 			return fmt.Errorf("add for %s: %w", t, err)

@@ -1,19 +1,100 @@
-GenerateInterval = 72
+GenerateInterval = 7
 
-[Tasks.Shower]
-RRuleSet = """
-DTSTART:20241106T045900Z
-RRULE:FREQ=DAILY;UNTIL=20241214T045900Z
-"""
-Task.QuickTitle = "シャワー"
+# Holiday Break - 2025-01-20
+# Spring Break - 2025-03-17 to 21
 
-[Tasks.JAPN4113]
+[Tasks.VIP2601]
 DryRun = true
 RRuleSet = """
-DTSTART:20241107T145512Z
-RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20241203T045900Z
+DTSTART:20250107T143000Z
+RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20250501T045900Z
 """
-Task.QuickTitle = "JAPN4113"
+ExDates = [ "2025-01-20 -0500", "2025-03-17 -0500", "2025-03-18 -0500", "2025-03-19 -0500", "2025-03-20 -0500", "2025-03-21 -0500" ]
+Task.QuickTitle = "VIP2601 Meeting"
 Task.Description = """
-[Canvas](https://gatech.instructure.com/courses/410760)
+[Canvas](https://gatech.instructure.com/courses/434304)
+"""
+
+[Tasks.CS3510B]
+DryRun = true
+RRuleSet = """
+DTSTART:20250107T143000Z
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20250501T045900Z
+"""
+ExDates = [ "2025-01-20 -0500", "2025-03-17 -0500", "2025-03-18 -0500", "2025-03-19 -0500", "2025-03-20 -0500", "2025-03-21 -0500" ]
+Task.QuickTitle = "CS3510 B Lecture"
+Task.Description = """
+[Canvas](https://gatech.instructure.com/courses/440288)
+"""
+
+[Tasks.CX4803GPU]
+DryRun = true
+RRuleSet = """
+DTSTART:20250107T233000Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20250501T045900Z
+"""
+ExDates = [ "2025-01-20 -0500", "2025-03-17 -0500", "2025-03-18 -0500", "2025-03-19 -0500", "2025-03-20 -0500", "2025-03-21 -0500" ]
+Task.QuickTitle = "CX4803 GPU Lecture"
+Task.Description = """
+[Canvas](https://gatech.instructure.com/courses/448358)
+"""
+
+[Tasks.ENGL1101R2]
+DryRun = true
+RRuleSet = """
+DTSTART:20250107T203000Z
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20250501T045900Z
+"""
+ExDates = [ "2025-01-20 -0500", "2025-03-17 -0500", "2025-03-18 -0500", "2025-03-19 -0500", "2025-03-20 -0500", "2025-03-21 -0500" ]
+Task.QuickTitle = "ENGL1101 R2 Lecture"
+Task.Description = """
+[Canvas](https://gatech.instructure.com/courses/448790)
+"""
+
+[Tasks.MATH2551N]
+DryRun = true
+RRuleSet = """
+DTSTART:20250107T220000Z
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20250501T045900Z
+"""
+ExDates = [ "2025-01-20 -0500", "2025-03-17 -0500", "2025-03-18 -0500", "2025-03-19 -0500", "2025-03-20 -0500", "2025-03-21 -0500" ]
+Task.QuickTitle = "MATH2551 N Lecture"
+Task.Description = """
+[Canvas](https://gatech.instructure.com/courses/430024)
+"""
+
+[Tasks.MATH2551N02]
+DryRun = true
+RRuleSet = """
+DTSTART:20250107T220000Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20250501T045900Z
+"""
+ExDates = [ "2025-01-20 -0500", "2025-03-17 -0500", "2025-03-18 -0500", "2025-03-19 -0500", "2025-03-20 -0500", "2025-03-21 -0500" ]
+Task.QuickTitle = "MATH2551 N02 Studio"
+Task.Description = """
+[Canvas](https://gatech.instructure.com/courses/430024)
+"""
+
+[Tasks.CS2110B]
+DryRun = true
+RRuleSet = """
+DTSTART:20250107T190000Z
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20250501T045900Z
+"""
+ExDates = [ "2025-01-20 -0500", "2025-03-17 -0500", "2025-03-18 -0500", "2025-03-19 -0500", "2025-03-20 -0500", "2025-03-21 -0500" ]
+Task.QuickTitle = "CS2110 B Lecture"
+Task.Description = """
+[Canvas](https://gatech.instructure.com/courses/423818)
+"""
+
+[Tasks.CS2110B03]
+DryRun = true
+RRuleSet = """
+DTSTART:20250107T220000Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20250501T045900Z
+"""
+ExDates = [ "2025-01-20 -0500", "2025-03-17 -0500", "2025-03-18 -0500", "2025-03-19 -0500", "2025-03-20 -0500", "2025-03-21 -0500" ]
+Task.QuickTitle = "CS2110 B03 Lab"
+Task.Description = """
+[Canvas](https://gatech.instructure.com/courses/423818)
 """

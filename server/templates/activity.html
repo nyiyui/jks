@@ -1,6 +1,6 @@
 {{ template "base.html" $ }}
 {{ define "title" }}
-{{ if eq "" (splitNoteTitle $a.Note) }}
+{{ if eq "" (splitNoteTitle .activity.Note) }}
 Activity for {{ .task.QuickTitle }}
 {{ else }}
 {{ $title := splitNoteTitle .activity.Note }}
