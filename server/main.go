@@ -151,7 +151,7 @@ func (s *Server) undoneTasks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	separators := map[int]time.Time{}
+	separators := make([]time.Time, len(ts))
 	for i, next := range ts {
 		if i == 0 {
 			continue
