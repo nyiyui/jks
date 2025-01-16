@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="/static/timezone_check.js"></script>
     <style>
       * {
         box-sizing: border-box;
@@ -110,10 +111,16 @@
     <title>
       {{ block "title" $ }}{{ end }}
     </title>
+    <input id="timezone" type="hidden" value="{{ .timezone }}" />
     {{ block "head-extra" $ }}{{ end }}
   </head>
   
   <body>
+    <nav id="timezone-alert" stlye="display: none;">
+      Your chosen timezone ({{ .timezone }}) is different from the browser's timezone
+      (<span id="timezone-browser"></span>).
+      You can change your chosen timezone in <a href="/login/settings">Settings</a>.
+    </nav>
     <nav id="nav-main">
       <a href="/activity/latest">Latest</a>
       <a href="/day/today">Today</a>
