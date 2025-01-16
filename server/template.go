@@ -140,17 +140,14 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 			},
 			"splitNoteTitle": func(s string) string {
 				lines := strings.SplitN(s, "\n", 2)
-				if len(lines) == 1 {
-					return lines[0]
-				}
-				return lines[0]
+				return strings.TrimSpace(lines[0])
 			},
 			"splitNoteBody": func(s string) string {
 				lines := strings.SplitN(s, "\n", 2)
 				if len(lines) == 1 {
 					return ""
 				}
-				return lines[1]
+				return strings.TrimSpace(lines[1])
 			},
 			"buildInfo": func() debug.BuildInfo {
 				return buildInfo
