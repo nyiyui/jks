@@ -21,9 +21,8 @@
 (too many tasks, truncated)
 {{ end }}
 {{ range $i, $task := .tasks }}
-{{ $sep := index $.separators $i }}
-{{ if $sep }}
-<h2>{{ formatYearMonth $.tzloc $sep }}</h2>
+{{ if index $.hasSeparators $i }}
+<h2>{{ index $.separators $i | formatYearMonth $.tzloc }}</h2>
 {{ end }}
 <div class="task-tile">
   <a href="/task/{{ $task.ID }}">

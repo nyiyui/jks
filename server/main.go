@@ -152,6 +152,7 @@ func (s *Server) undoneTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	separators := make([]time.Time, len(ts))
+	hasSeparators := make([]bool, len(ts))
 	for i, next := range ts {
 		if i == 0 {
 			continue
@@ -162,12 +163,14 @@ func (s *Server) undoneTasks(w http.ResponseWriter, r *http.Request) {
 		}
 		if current.Deadline.Month() != next.Deadline.Month() {
 			separators[i] = *next.Deadline
+			hasSeparators[i] = true
 		}
 	}
 	s.renderTemplate("undone-tasks.html", w, r, map[string]interface{}{
-		"tasks":      ts,
-		"tooMany":    len(ts) == 100,
-		"separators": separators,
+		"tasks":         ts,
+		"tooMany":       len(ts) == 100,
+		"separators":    separators,
+		"hasSeparators": hasSeparators,
 	})
 	return
 }
