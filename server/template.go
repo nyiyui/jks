@@ -135,6 +135,9 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				rel2 := rel.String()
 				return fmt.Sprintf("%s (%s)", abs, rel2[:len(rel2)-2])
 			},
+			"formatYearMonth": func(loc *time.Location, t time.Time) string {
+				return t.In(loc).Format("2006 Jan")
+			},
 			"splitNoteTitle": func(s string) string {
 				lines := strings.SplitN(s, "\n", 2)
 				if len(lines) == 1 {
@@ -153,7 +156,7 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 				return buildInfo
 			},
 			"vcsInfo": func() string {
-                                return vcsInfo
+				return vcsInfo
 			},
 			"isSamplePreview": func(v Event) bool {
 				_, ok := v.(seekbackStorage.SamplePreview)

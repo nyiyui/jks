@@ -151,12 +151,23 @@ func (s *Server) undoneTasks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	if len(ts) == 100 {
-		http.Error(w, "too many activities", 500)
-		return
+	separators := map[int]time.Time{}
+	for i, next := range ts {
+		if i == 0 {
+			continue
+		}
+		current := ts[i-1]
+		if current.Deadline == nil || next.Deadline == nil {
+			continue
+		}
+		if current.Deadline.Month() != next.Deadline.Month() {
+			separators[i] = *next.Deadline
+		}
 	}
 	s.renderTemplate("undone-tasks.html", w, r, map[string]interface{}{
-		"tasks": ts,
+		"tasks":      ts,
+		"tooMany":    len(ts) == 100,
+		"separators": separators,
 	})
 	return
 }

@@ -17,7 +17,13 @@
 {{ .tasks | len }} Undone Tasks
 {{ end }}
 {{ define "body" }}
+{{ if .tooMany }}
+(too many tasks, truncated)
+{{ end }}
 {{ range $i, $task := .tasks }}
+{{ if haskey $.separators $i }}
+<h2>{{ index $.separators $i | formatYearMonth $.tzloc }}</h2>
+{{ end }}
 <div class="task-tile">
   <a href="/task/{{ $task.ID }}">
     <h2>{{ $task.QuickTitle }}</h2>
