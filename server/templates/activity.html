@@ -63,10 +63,13 @@ Activity for {{ .task.QuickTitle }}
   </ol>
 </section>
 {{ end }}
-{{ $body := splitNoteBody .activity.Note }}
-{{ renderMarkdown $body }}
-<pre>
-{{ toPrettyJson . }}
-</pre>
+<section id="description">
+  {{ $body := splitNoteBody .activity.Note }}
+  {{ renderMarkdown $body }}
+</section>
+<section id="task-description">
+  <h2>Task Description</h2>
+  {{ renderMarkdown .task.Description }}
+</section>
 {{ end }}
 
