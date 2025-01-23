@@ -47,12 +47,26 @@ func (s *Server) renderTemplate(path stringConstant, w http.ResponseWriter, r *h
 		panic("template not found")
 		return
 	}
+	t, err := t.Clone()
+	if err != nil {
+		panic("template clone error") // t should not have been executed yet
+	}
 	if data == nil {
 		data = map[string]interface{}{}
 	}
 	data["login"], _ = r.Context().Value(LoginUserDataKey).(githubUserData)
 	data["tzloc"] = getTimeLocation(r)
-	err := t.Execute(w, data)
+	t = t.Funcs(template.FuncMap{
+		"timezone": func() string {
+			loginSession, err := s.store.Get(r, "login")
+			if err != nil {
+				return ""
+			}
+			tzName, _ := loginSession.Values["timezone"].(string)
+			return tzName
+		},
+	})
+	err = t.Execute(w, data)
 	if err != nil {
 		log.Printf("template error: %s", err)
 		http.Error(w, "template error", 500)
