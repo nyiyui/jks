@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -13,6 +14,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"nyiyui.ca/jks/linkdata"
 	"nyiyui.ca/jks/storage"
 )
 
@@ -433,4 +435,70 @@ WHERE activity_log.time_start >= ? AND activity_log.time_end < ?
 		tasks[i] = taskToStorage(ts[i])
 	}
 	return tasks, activities, plans, nil
+}
+
+type linkRow struct {
+	Source      string `db:"source"`
+	Label       string `db:"label"`
+	Destination string `db:"destination"`
+}
+
+func (d *Database) ReplaceLinks(source *url.URL, links []linkdata.Link, ctx context.Context) error {
+	tx, err := d.DB.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`DELETE FROM links WHERE source = ?`, source.String())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	for _, link := range links {
+		_, err = tx.Exec(`INSERT INTO links (source, label, destination) VALUES (?, ?, ?)`, source.String(), link.Label, link.Destination.String())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (d *Database) GetLinks(source *url.URL, ctx context.Context) ([]linkdata.Link, error) {
+	var rows []linkRow
+	err := d.DB.SelectContext(ctx, &rows, `SELECT * FROM links WHERE source = ?`, source.String())
+	if err != nil {
+		return nil, err
+	}
+	links := make([]linkdata.Link, len(rows))
+	for i, row := range rows {
+		dest, err := url.Parse(row.Destination)
+		if err != nil {
+			return nil, fmt.Errorf("parsing destination: %w", err)
+		}
+		links[i] = linkdata.Link{
+			Label:       row.Label,
+			Destination: dest,
+		}
+	}
+	return links, nil
+}
+
+func (d *Database) GetBacklinks(destination *url.URL, ctx context.Context) ([]linkdata.Backlink, error) {
+	var rows []linkRow
+	err := d.DB.SelectContext(ctx, &rows, `SELECT * FROM links WHERE destination = ?`, destination.String())
+	if err != nil {
+		return nil, err
+	}
+	backlinks := make([]linkdata.Backlink, len(rows))
+	for i, row := range rows {
+		source, err := url.Parse(row.Source)
+		if err != nil {
+			return nil, fmt.Errorf("parsing source: %w", err)
+		}
+		backlinks[i] = linkdata.Backlink{
+			Source: source,
+			Label:  row.Label,
+		}
+	}
+	return backlinks, nil
 }

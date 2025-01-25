@@ -2,7 +2,10 @@ package storage
 
 import (
 	"context"
+	"net/url"
 	"time"
+
+	"nyiyui.ca/jks/linkdata"
 )
 
 type Task struct {
@@ -74,6 +77,10 @@ type Storage interface {
 	// Range returns activities and plans returned by PlanRange and ActivityRange.
 	// Tasks are the tasks referred to by each activity and plan.
 	Range(a, b time.Time, ctx context.Context) ([]Task, []Activity, []Plan, error)
+
+	ReplaceLinks(source *url.URL, links []linkdata.Link, ctx context.Context) error
+	GetLinks(source *url.URL, ctx context.Context) ([]linkdata.Link, error)
+	GetBacklinks(destination *url.URL, ctx context.Context) ([]linkdata.Backlink, error)
 }
 
 type Window[T any] interface {

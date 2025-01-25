@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/url"
+	"strconv"
 	"time"
 
 	"nyiyui.ca/jks/linkdata"
@@ -26,6 +27,15 @@ func (s *Server) getLinks(link *url.URL, ctx context.Context) (linkdata.LinkData
 }
 
 func (s *Server) syncDatabase(ctx context.Context) error {
+	taskURL, err := url.Parse("/task/")
+	if err != nil {
+		panic(err)
+	}
+	activityURL, err := url.Parse("/activity/")
+	if err != nil {
+		panic(err)
+	}
+
 	tasksWindow, err := s.st.TaskSearch("", time.Time{}, ctx)
 	if err != nil {
 		return err
@@ -38,10 +48,40 @@ func (s *Server) syncDatabase(ctx context.Context) error {
 		}
 		tasks = append(tasks, tasks2...)
 	}
-	panic("not implemented")
 	for _, task := range tasks {
 		ld := linkdata.NewLinkDataFromMarkdownSource([]byte(task.Description))
-		_ = ld
+		rowURl := taskURL.JoinPath(strconv.FormatInt(task.ID, 10))
+		if err != nil {
+			panic(err)
+		}
+		err = s.st.ReplaceLinks(rowURl, ld.Links, ctx)
+		if err != nil {
+			return err
+		}
 	}
-	panic("not implemented")
+
+	activitiesWindow, err := s.st.ActivityRange(time.Time{}, time.Now(), ctx)
+	if err != nil {
+		return err
+	}
+	activities := make([]storage.Activity, 0)
+	for offset := 0; true; offset += 1000 {
+		activities2, err := activitiesWindow.Get(1000, offset)
+		if err != nil {
+			return err
+		}
+		activities = append(activities, activities2...)
+	}
+	for _, activity := range activities {
+		ld := linkdata.NewLinkDataFromMarkdownSource([]byte(activity.Note))
+		rowURL := activityURL.JoinPath(strconv.FormatInt(activity.ID, 10))
+		if err != nil {
+			panic(err)
+		}
+		err = s.st.ReplaceLinks(rowURL, ld.Links, ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

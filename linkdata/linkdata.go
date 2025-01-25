@@ -17,6 +17,11 @@ type Link struct {
 	Destination *url.URL
 }
 
+type Backlink struct {
+	Source *url.URL
+	Label  string
+}
+
 func NewLinkDataFromMarkdownSource(source []byte) LinkData {
 	r := text.NewReader(source)
 	node := goldmark.New().Parser().Parse(r)

@@ -927,38 +927,19 @@ ORDER BY time_start DESC
 	return
 }
 
-type databaseLink struct {
-	Source      string `db:"source"`
-	Label       string `db:"label"`
-	Destination string `db:"destination"`
-}
-
 func (s *Server) linkdata(w http.ResponseWriter, r *http.Request) {
 	a, err := url.Parse(r.URL.Query().Get("url"))
 	if err != nil {
 		http.Error(w, "invalid url", 422)
 		return
 	}
-	var links []databaseLink
-	err = s.st.(*database.Database).DB.Select(&links, `
-SELECT * FROM linkdata
-WHERE source = ?
-`, a.String())
+	links, err := s.st.GetLinks(a, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)
 		return
 	}
-	links2 := make([]linkdata.Link, len(links))
-	for i, l := range links {
-		destination, err := url.Parse(l.Destination)
-		if err != nil {
-			log.Printf("url in database (%s, %s) was invalid: %s", l.Source, l.Destination, err)
-			continue
-		}
-		links2[i] = linkdata.Link{l.Label, destination}
-	}
-	err = json.NewEncoder(w).Encode(linkdata.LinkData{links2})
+	err = json.NewEncoder(w).Encode(linkdata.LinkData{links})
 	if err != nil {
 		log.Printf("json encode: %s", err)
 		http.Error(w, "json encode error", 500)
