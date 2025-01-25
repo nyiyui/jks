@@ -176,6 +176,7 @@ func (s *Server) parseTemplate(basename string) (*template.Template, error) {
 			"asSamplePreview": func(v Event) seekbackStorage.SamplePreview {
 				return v.(seekbackStorage.SamplePreview)
 			},
+			"timezone": func() string { return "" }, // dummy, replaced with real closure during render
 		})
 	t, err := t.ParseFS(template.TrustedFSFromEmbed(layoutsFS), "layouts/*.html")
 	if err != nil {

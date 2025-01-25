@@ -3,7 +3,9 @@ package linkdata
 import (
 	"net/url"
 
+	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
 )
 
 type LinkData struct {
@@ -13,6 +15,12 @@ type LinkData struct {
 type Link struct {
 	Label       string
 	Destination *url.URL
+}
+
+func NewLinkDataFromMarkdownSource(source []byte) LinkData {
+	r := text.NewReader(source)
+	node := goldmark.New().Parser().Parse(r)
+	return NewLinkDataFromMarkdown(source, node)
 }
 
 func NewLinkDataFromMarkdown(source []byte, node ast.Node) LinkData {
@@ -39,6 +47,13 @@ func (ld *LinkData) walkGoldmarkNode(source []byte, node ast.Node) {
 			l.Label = label
 		}
 		ld.Links = append(ld.Links, l)
+	case ast.KindAutoLink:
+		destination, err := url.Parse(string(node.Text(source)))
+		if err != nil {
+			// ignore invalid links
+			return
+		}
+		ld.Links = append(ld.Links, Link{Destination: destination})
 	default:
 		if node.HasChildren() {
 			for child := node.FirstChild(); child != nil; child = child.NextSibling() {
