@@ -292,21 +292,10 @@ func (s *Server) taskView(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	asw, err := s.st.TaskGetActivities(id, r.Context())
+	as, err := s.st.TaskGetActivities(id, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)
-		return
-	}
-	defer asw.Close()
-	as, err := asw.Get(100, 0)
-	if err != nil {
-		log.Printf("storage: %s", err)
-		http.Error(w, "storage error", 500)
-		return
-	}
-	if len(as) == 100 {
-		http.Error(w, "too many activities", 500)
 		return
 	}
 	ps, err := s.st.TaskGetPlans(id, 100, 0, r.Context())
@@ -344,21 +333,10 @@ func (s *Server) taskEdit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "storage error", 500)
 		return
 	}
-	asw, err := s.st.TaskGetActivities(id, r.Context())
+	as, err := s.st.TaskGetActivities(id, r.Context())
 	if err != nil {
 		log.Printf("storage: %s", err)
 		http.Error(w, "storage error", 500)
-		return
-	}
-	defer asw.Close()
-	as, err := asw.Get(100, 0)
-	if err != nil {
-		log.Printf("storage: %s", err)
-		http.Error(w, "storage error", 500)
-		return
-	}
-	if len(as) == 100 {
-		http.Error(w, "too many activities", 500)
 		return
 	}
 	var totalSpent time.Duration

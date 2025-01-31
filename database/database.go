@@ -148,18 +148,9 @@ func (d *Database) TaskGetPlans(id int64, limit, offset int, ctx context.Context
 	return ps2, nil
 }
 
-func (d *Database) TaskGetActivities(id int64, ctx context.Context) (storage.Window[storage.Activity], error) {
-	return &window{d, id}, nil
-}
-
-type window struct {
-	d  *Database
-	id int64
-}
-
-func (w *window) Get(limit, offset int) ([]storage.Activity, error) {
-	ts := make([]Activity, limit)
-	err := w.d.DB.Select(&ts, `SELECT * FROM activity_log WHERE task_id = ? LIMIT ? OFFSET ?`, w.id, limit, offset)
+func (d *Database) TaskGetActivities(id int64, ctx context.Context) ([]storage.Activity, error) {
+	ts := make([]Activity, 0)
+	err := d.DB.Select(&ts, `SELECT * FROM activity_log WHERE task_id = ?`, id)
 	if err != nil {
 		return nil, fmt.Errorf("select: %w", err)
 	}
@@ -168,10 +159,6 @@ func (w *window) Get(limit, offset int) ([]storage.Activity, error) {
 		ts2[i] = activityToStorage(ts[i])
 	}
 	return ts2, nil
-}
-
-func (w *window) Close() error {
-	return nil
 }
 
 func taskToStorage(t Task) storage.Task {

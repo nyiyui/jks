@@ -68,7 +68,7 @@ type Storage interface {
 	PlanEdit(p Plan, ctx context.Context) error
 
 	TaskGet(id int64, ctx context.Context) (Task, error)
-	TaskGetActivities(id int64, ctx context.Context) (Window[Activity], error)
+	TaskGetActivities(id int64, ctx context.Context) ([]Activity, error)
 	TaskGetPlans(id int64, limit, offset int, ctx context.Context) ([]Plan, error)
 	TaskSearch(query string, undoneAt time.Time, ctx context.Context) (Window[Task], error)
 	TaskAdd(t Task, ctx context.Context) (id int64, err error)
