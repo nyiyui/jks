@@ -42,7 +42,6 @@ Latest
     </td>
     <td>
       {{ if ge $a.TimeEnd.Unix (sub now.Unix 86400) }}
-      {{ if eq $i 0 }}
       <form action="/activity/{{ $a.ID }}/extend" method="post">
         <label>
           New End
@@ -50,7 +49,6 @@ Latest
         </label>
         <input type="submit" value="Extend" />
       </form>
-      {{ end }}
       <form action="/activity/{{ $a.ID }}/resume" method="post" style="display: block;">
         <label>
           Location
